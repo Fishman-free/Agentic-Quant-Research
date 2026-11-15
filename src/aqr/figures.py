@@ -125,7 +125,7 @@ def fig_funding(rep: dict):
     for (t, r), o in zip(big.iterrows(), offs):
         ax.annotate(t.strftime("%m-%d %H:%M"), (t, r["err_bp"]), xytext=o, textcoords="offset points",
                     fontsize=5.8, color=INK2, arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.5))
-    ax.set_ylabel("我算的 − 官方（bp）")
+    ax.set_ylabel("复现值 − 官方值（bp）")
     ax.set_ylim(-1.0, 0.45)
     _month_axis(ax, 2)
     ax.legend(loc="upper right", ncol=2, markerscale=2.5, borderaxespad=0.1)
@@ -134,7 +134,7 @@ def fig_funding(rep: dict):
     _save(fig, "fig2_funding")
 
 
-# ------------------------------------------------------------------ 图 3：拉得多快、谁在动、资金费何时起作用
+# ------------------------------------------------------------------ 图 3：回归速度、调整份额、资金费的作用时点
 def fig_dynamics(dyn: dict):
     fig, axes = plt.subplots(1, 3, figsize=(FULL_W, 1.85), gridspec_kw={"width_ratios": [1, 1.05, 1.15]})
     ax = axes[0]
@@ -150,7 +150,7 @@ def fig_dynamics(dyn: dict):
     ax.set_xlim(0.5, 24.5)
     ax.set_ylim(-1.0, 0)
     ax.legend(loc="upper right")
-    _tag(ax, "(a) 偏离之后 h 小时回吐多少")
+    _tag(ax, "(a) 偏离之后 h 小时的回归系数")
 
     ax = axes[1]
     rows = [("XAU 全样本", dyn["XAUUSDT"]["legs"]["全样本"]), ("XAU 05-08 前", dyn["XAUUSDT"]["legs"]["05-08 前"]),
@@ -168,10 +168,10 @@ def fig_dynamics(dyn: dict):
     ax.set_xticks([0, 0.5, 1])
     ax.set_xticklabels(["0", "50%", "100%"])
     ax.grid(False)
-    ax.text(0, len(rows) - 0.35, "■ 永续向现货靠", color=BLUE, fontsize=7)
-    ax.text(1, len(rows) - 0.35, "现货向永续靠 ■", color=VIOLET, fontsize=7, ha="right")
+    ax.text(0, len(rows) - 0.35, "■ 永续贡献", color=BLUE, fontsize=7)
+    ax.text(1, len(rows) - 0.35, "现货贡献 ■", color=VIOLET, fontsize=7, ha="right")
     ax.set_ylim(-0.6, len(rows) - 0.05)
-    _tag(ax, "(b) 4 小时内是谁在动")
+    _tag(ax, "(b) 4 小时内永续与现货的调整份额")
 
     ax = axes[2]
     ev, pl = dyn["XAUUSDT"]["event"], dyn["XAUUSDT"]["event_placebo"]

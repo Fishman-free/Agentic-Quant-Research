@@ -89,7 +89,7 @@ def check_funding(res, m: Macros):
         mine = res["funding"][sym]["main"].loc[t]
         rows.append([sym, t.strftime("%Y-%m-%d %H:%M"), "\\texttt{" + raw[2] + "}", raw_bp(raw[2]), f(mine["calc"] * 1e4),
                      f(mine["err_bp"], 3, True)])
-    _tex_table(C.GEN / "tab_check_funding.tex", ["合约", "结算时刻", "官方原值", "官方 (bp)", "我算的 (bp)", "差 (bp)"],
+    _tex_table(C.GEN / "tab_check_funding.tex", ["合约", "结算时刻", "官方原值", "官方 (bp)", "复现值 (bp)", "差 (bp)"],
                rows, "llrrrr")
 
 
@@ -144,25 +144,25 @@ def repro_table(res):
     _tex_table(C.GEN / "tab_repro.tex", ["", "口径", "$>$0.1bp", "最大误差", "RMSE", "包络内"], rows, "llrrrr")
 
 
-# 每组特征怎么算、为什么放进去（正文表 4 的文字列；数字列来自交叉验证消融）
+# 每组特征的构造方式与纳入理由（正文表 4 的文字列；数字列来自交叉验证消融）
 FEATURE_DOC = {
     "偏离": ("基差减过去 1、4、24、72 小时均值", "基线的来源；区分新偏离和旧偏离"),
     "噪声": ("基差减 15 分钟均值；成交价减盘口价", "瞬间的报价误差几分钟内就消失"),
     "溢价与指数差": ("两部分各自相对 24 小时均值的偏离", "资金费只作用于溢价"),
     "资金费": ("本期估计值、上期官方值、距结算时间、死区外×偏离", "结算前后推动溢价；死区外才随溢价变"),
-    "动量": ("永续、现货各自 15 分钟和 1 小时涨跌", "区分偏离由哪一边造成"),
+    "动量": ("永续、现货各自 15 分钟和 1 小时涨跌", "区分偏离的驱动方"),
     "波动与流动性": ("基差波动及其×偏离、主动买入占比、零成交占比", "成交稀少时是旧报价，偏离不可信"),
     "休市日历": ("距收盘、距开盘时间，窗口内休市占比及其×偏离", "跨越休市时现货不动；按公开规则写成"),
 }
 
 
 def features_table(res):
-    """特征组说明表：怎么算、为什么放、交叉验证上去掉这一组后 RMSE 变差多少。"""
+    """特征组说明表：构造方式、纳入理由、交叉验证上去掉该组后 RMSE 的增幅。"""
     a = {sym: res["models"][sym]["ablation"].set_index("组") for sym in SYMS}
     rows = [[g, *FEATURE_DOC[g], *(f(a[sym].loc[g, "剔除损失"], 3, True) for sym in SYMS)]
             for g in a[SYMS[0]].index]
     cols = "".join(">{\\raggedright\\arraybackslash}p{%s}" % w for w in ("2.0cm", "6.2cm", "5.6cm")) + "rr"
-    _tex_table(C.GEN / "tab_features.tex", ["特征组", "怎么算", "为什么放进去", "XAU", "PAXG"], rows, cols)
+    _tex_table(C.GEN / "tab_features.tex", ["特征组", "构造方式", "纳入理由", "XAU", "PAXG"], rows, cols)
 
 
 def issues_table(res, m: Macros):
