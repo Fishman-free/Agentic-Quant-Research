@@ -1,0 +1,16 @@
+# 原始数据不入库：运行 scripts/download_datasets.py 下载到 data/
+data/
+# 中间缓存（parquet），删掉会从原始 zip 重建
+cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+# LaTeX 中间文件（main.pdf 入库）
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.synctex.gz
+report/*.xdv
+# 图的 PNG 预览（报告使用 PDF 矢量图）
+report/figures/*.png
