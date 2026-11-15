@@ -7,6 +7,7 @@
   python run_all.py --no-pdf   # 只算数字与图，不调用 xelatex
 """
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -71,9 +72,12 @@ def main():
 
     if not a.no_pdf:
         rep = C.REPO / "report"
+        # 固定 PDF 内的时间戳与文件 ID，重跑后 main.pdf 逐字节不变
+        env = {**os.environ, "SOURCE_DATE_EPOCH": "1789430400", "FORCE_SOURCE_DATE": "1"}
         for _ in range(2):  # 两遍以解析交叉引用
             r = subprocess.run(["xelatex", "-interaction=nonstopmode", "-halt-on-error", "main.tex"],
-                               cwd=rep, capture_output=True, text=True, encoding="utf-8", errors="replace")
+                               cwd=rep, env=env, capture_output=True, text=True, encoding="utf-8",
+                               errors="replace")
         if r.returncode != 0:
             print(r.stdout[-3000:])
             sys.exit("xelatex 失败，见 report/main.log")
@@ -81,4 +85,5 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows 重定向到文件时默认是 GBK
     main()

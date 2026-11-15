@@ -12,5 +12,3 @@ report/*.out
 report/*.toc
 report/*.synctex.gz
 report/*.xdv
-# 图的 PNG 预览（报告使用 PDF 矢量图）
-report/figures/*.png

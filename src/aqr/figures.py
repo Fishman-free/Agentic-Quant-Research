@@ -48,8 +48,8 @@ def setup():
 
 
 def _save(fig, name):
-    fig.savefig(C.FIG / f"{name}.pdf")
-    fig.savefig(C.FIG / f"{name}.png", dpi=200)
+    # 去掉创建时间，重跑后 PDF 逐字节不变
+    fig.savefig(C.FIG / f"{name}.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
 

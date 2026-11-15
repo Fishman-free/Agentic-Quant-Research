@@ -11,6 +11,7 @@ import io
 import math
 import os
 import re
+import sys
 import zipfile
 from datetime import datetime, timedelta, timezone
 
@@ -92,4 +93,5 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows 重定向到文件时默认是 GBK
     raise SystemExit(main())

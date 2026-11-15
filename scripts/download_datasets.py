@@ -251,6 +251,7 @@ def verify_zips():
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows 重定向到文件时默认是 GBK
     t0 = time.time()
     download_binance()
     download_daily_patches()
