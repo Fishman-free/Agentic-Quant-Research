@@ -6,7 +6,7 @@
 
 设计原则（在看测试集之前定下）：
   题面已提前告知 07-16 起 XAU 基差含 USDT/USD 偏离——训练期从未出现这种水平漂移，
-  所以特征只用"相对滚动均值的偏离"类量，不用基差、指数腿的绝对水平。
+  所以特征只用"相对滚动均值的偏离"类量，不用基差、指数差的绝对水平。
 """
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ HOUR = pd.Timedelta(hours=1)
 GROUPS = {
     "偏离": ["dev_1h", "dev_4h", "dev_24h", "dev_72h"],
     "噪声": ["noise_15m", "trade_vs_book"],
-    "两腿": ["prem_leg_dev", "index_leg_dev"],
+    "溢价与指数差": ["prem_leg_dev", "index_leg_dev"],
     "资金费": ["F_hat", "F_last_off", "tts", "outside_dead_x_dev"],
     "动量": ["r_perp_15m", "r_perp_1h", "r_spot_15m", "r_spot_1h"],
     "波动与流动性": ["vol_basis_24h", "vol_x_dev", "taker_imb_1h", "stale_1h"],

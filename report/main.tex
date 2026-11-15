@@ -1,253 +1,265 @@
 % 资金费能把黄金永续拉回现货吗？——研究报告
 % 编译：xelatex main.tex（run_all.py 会自动编译两遍）。正文中的数字全部来自 generated/numbers.tex。
 \documentclass[UTF8,zihao=5,a4paper]{ctexart}
-\usepackage[a4paper,left=1.55cm,right=1.55cm,top=1.45cm,bottom=1.5cm,footskip=0.65cm]{geometry}
+\usepackage[a4paper,left=1.7cm,right=1.7cm,top=1.5cm,bottom=1.5cm,footskip=0.65cm]{geometry}
 \usepackage{amsmath,amssymb,booktabs,graphicx,array,tabularx,xcolor,enumitem,float}
-\usepackage[font=small,labelfont=bf,skip=2pt]{caption}
+\usepackage[font=small,labelfont=bf,skip=3pt]{caption}
 \usepackage[hidelinks]{hyperref}
 \input{generated/numbers.tex}
 
-\definecolor{ink2}{HTML}{52514E}
-\definecolor{accent}{HTML}{2A78D6}
-\definecolor{boxbg}{HTML}{F4F6FA}
-\linespread{1.12}\selectfont
-\setlength{\parskip}{1.2pt}
-\setlength{\abovecaptionskip}{2pt}
+\definecolor{accent}{HTML}{1F5FAD}
+\linespread{1.1}\selectfont
+\setlength{\parskip}{1.5pt plus 1pt}
+\setlength{\abovecaptionskip}{3pt}
 \setlength{\belowcaptionskip}{0pt}
 \setlength{\textfloatsep}{6pt plus 2pt}
-\setlength{\floatsep}{5pt}
-\setlength{\intextsep}{5pt}
+\setlength{\floatsep}{5pt plus 2pt}
+\setlength{\intextsep}{5pt plus 2pt}
 \setlength{\tabcolsep}{4pt}
-\setlist{nosep,leftmargin=1.4em}
+\setlist{itemsep=0.5pt,parsep=0pt,topsep=1.5pt,partopsep=0pt,leftmargin=2em}
 \ctexset{
-  section={format=\large\bfseries\heiti\color{accent},beforeskip=5pt,afterskip=2pt,number=\arabic{section}},
-  subsection={format=\normalsize\bfseries\heiti,beforeskip=3pt,afterskip=1pt},
+  section={format=\large\bfseries\heiti\color{accent},beforeskip=6pt plus 2pt,afterskip=2.5pt},
+  subsection={format=\normalsize\bfseries\heiti,beforeskip=3pt plus 1pt,afterskip=1.5pt},
 }
-\renewcommand{\arraystretch}{1.08}
+\renewcommand{\arraystretch}{1.06}
 \newcommand{\bp}{\,bp}
 \newcommand{\Pbar}{\overline{P}}
 \newcommand{\key}[1]{\textbf{#1}}
-\newcommand{\note}[1]{{\color{ink2}#1}}
 
 \begin{document}
 \pagestyle{plain}
 
 \begin{center}
-{\LARGE\bfseries\heiti 资金费能把黄金永续拉回现货吗？}\\[2pt]
-{\small Zhuqi Ma\quad·\quad AGENTIC 多资产量化研究实习申请项目\quad·\quad 数据区间 2026-01-01 至 2026-10-01（UTC）}
+{\LARGE\bfseries\heiti 资金费能把黄金永续拉回现货吗？}\\[4pt]
+{\large Zhuqi Ma}\\[1pt]
+{\small AGENTIC 多资产量化研究实习申请项目\qquad 数据区间：2026-01-01 至 2026-10-01（UTC）}
 \end{center}
-\vspace{-3pt}
 
-\noindent\colorbox{boxbg}{\parbox{\dimexpr\linewidth-2\fboxsep}{\small
-\key{结论。}资金费拉的是“永续相对参考指数”，拉力集中在结算前后；基差的回归主要由现货追上永续完成，价格发现发生在 24 小时交易的永续上。
-\key{机制：}在逐段从数据中识别出的时变参数下，两个合约各 \repXAUn 期资金费逐期复现：PAXG 全部误差 $<$0.1\bp，XAU 仅 \repXAUbig 期超过，且唯一一期落在误差包络外的已定位到参考指数异常。
-\key{拉得多快：}基线半衰期 XAU \dXAUhl\,h、PAXG \dPAXGhl\,h；剥离报价噪声后为 \dXAUhliv\,h / \dPAXGhliv\,h。回归分两段：刚出现的偏离 4 小时内回吐 \dXAUfresh（XAU），持续的偏离半衰期 \dXAUhlold\,h。
-\key{谁向谁靠：}剔除共同金价波动后，4 小时回归中 XAU 永续只承担 \dXAUshareall，其余由真实金价完成。
-\key{拉不动的三种情形：}
-（1）溢价落在 ±0.05\% 死区内，资金费恒等于利息项，对溢价没有边际拉力。PAXG 的溢价 9 个月中位数是 \dPAXGPmed\bp，正好卡在死区下沿。
-（2）现货休市。05-08 之前参考指数冻结，资金费把永续拉向周五的旧价；之后休市期间 \clNpostClosed 期资金费全部恰好为 0。
-（3）参考指数和真实金价本身就有偏差，例如 07-16 起的 USDT/USD 换算让两者平均差了 \qUsdtAfter\bp。
-\key{模型：}测试期 RMSE 比基线低 \mXAUgainpct（XAU，DM $p$=\mXAUdmp）和 \mPAXGgainpct（PAXG，$p$=\mPAXGdmp）。
-\key{休市：}05-08 之后，周末永续的涨跌能解释开盘金价跳空方差的 \clWkPostrsq（斜率 \clWkPostslope）。}}
-
-\section{数据对齐：四个价格放到同一个时钟上}
-全部序列用“分钟 K 线结束时刻（UTC）”作索引：Binance 的 \texttt{open\_time} 加 1 分钟；资金费的 \texttt{calc\_time} 向下取整到整点；现货 K 线的时间戳是微秒、期货是毫秒，统一换算。
-HistData 的换算规则需要用数据证明，这里有两条互相独立的证据（图 1）。
-\key{证据一}：逐个交易日扫描偏移 $k$，计算 HistData 与 XAU 永续一分钟收益的相关系数。03-27 之前每天的最优值都是 $k=300$ 分钟（\ckPreDays/\ckPreN 天），03-30 之后每天都是 $k=240$ 分钟（\ckPostDays/\ckPostN 天），相关系数中位数均为 \ckCorrPost；偏移差 ±1 分钟时相关系数中位数只有 \ckNeighbor。这说明 HistData 标签是分钟\key{起点}，而且不存在半分钟的错位。
-\key{证据二}：每日 1 小时休市在本地时钟上，平时位于 17:00，03-09 至 03-26 却位于 16:00。美国 03-08 已进入夏令时，HistData 此时仍按 UTC−5 记时，到 03-28/29 那个周末（欧洲夏令时切换日）才改为 UTC−4。
-\key{规则}：UTC 结束时刻 = 本地标签 + 5h（03-28 之前；之后 + 4h）+ 1 分钟。切换落在周末休市内，具体时刻对结果没有影响。
-文档式的“恒为 UTC−5”和“按美国夏令时切换”两种说法都不对：前者让 XAU 测试期基线 RMSE 从 \qClockBase 变成 \qClockEst\bp，后者也会变差到 \qClockUS\bp。
-另外用公开交易日历核对 HistData：日历显示开市但没有数据的有 \calOpenNoData 分钟，日历显示休市却有数据的只有 \calClosedData 分钟。
-\begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/fig1_clock.pdf}
-\caption{HistData 时钟的两条独立证据。(a) 03-27 之前只有偏移 +5h 时相关系数接近 1，03-30 之后换成 +4h，1 月初偏低是因为 XAU 永续成交稀少；(b) 03-09 至 03-26 日休提前 1 小时，说明 HistData 没有跟美国夏令时切换。}
-\end{figure}
 \vspace{-4pt}
+\begin{center}{\heiti\bfseries 摘\quad 要}\end{center}
+\vspace{-9pt}
+{\small\setlength{\leftskip}{1.5em}\setlength{\rightskip}{1.5em}
+Binance 上有两个黄金永续合约：XAU 永续以外汇市场的真实金价为现货，这个现货周末休市；PAXG 永续以 24 小时交易的 PAXG 代币为现货。交易所用资金费把永续价格拉向参考指数。本文用 2026 年 1 月至 9 月的一分钟数据研究资金费能不能把永续拉回现货，拉得多快，什么时候拉不动。我们按逐段识别出的时变参数逐期重算资金费，两个合约各 \repXAUn 期中只有 \repXAUbig 期误差超过 0.1\bp；预测未来 4 小时基差变化的模型，测试期 RMSE 比均值回归基线低 \mXAUgainpct（XAU）和 \mPAXGgainpct（PAXG），差异显著。主要结论有三点。第一，基差偏离会回来，半衰期 XAU 约 \dXAUhl–\dXAUhliv 小时、PAXG 约 \dPAXGhl–\dPAXGhliv 小时，但主要靠现货追上永续，XAU 永续自身只承担 \dXAUshareall 的调整。第二，资金费的作用集中在结算前后，溢价指数在结算前被压低、结算后几分钟内弹回。第三，溢价处在死区内，或现货休市，或参考指数偏离现货时，资金费拉不动。休市期间 XAU 永续的周末涨跌能解释开盘金价跳空方差的 \clWkPostrsq。\par
+\vspace{1pt}
+{\heiti 关键词：}永续合约；资金费；基差；价格发现；现货休市\par}
 
-\section{机制复现：时变参数下逐期重算资金费}
-\key{参数随时间变化，不能用样本末的参数回填。}参数表 \ref{tab:params} 里每一段都有数据证据，生效时刻的含义也是从数据推出来的：一段参数作用于结算时刻\key{严格晚于}生效时刻的那些期。
+\section{引言}
+永续合约没有到期日，也不交割实物。为了让永续价格跟住现货，交易所设计了资金费：每隔几小时结算一次，永续比参考指数贵时，多头按持仓价值向空头付费，便宜时反过来。按照这个设计，永续偏离得越远，站在偏离一方的成本越高，价格应当被拉回参考指数，进而拉回现货。
+
+Binance 的两个黄金永续用同一套资金费公式，锚的现货却不同。XAU 永续的现货是外汇市场的真实金价（XAU/USD），周末休市，工作日每天还停盘约 1 小时；PAXG 永续的现货是 PAXG 代币，每枚对应 1 盎司实物黄金，24 小时交易。现货休市时 XAU 永续失去了实时的外部锚，PAXG 永续没有这个问题，两者正好构成一组对照。
+
+资金费能不能把永续拉回现货？拉得多快？什么时候拉不动？这是本文要回答的三个问题。研究分五步，依次对应第 3 至第 7 节：（1）\key{数据对齐}，把四个价格和资金费放到同一个 UTC 时钟上；（2）\key{机制复现}，识别各时段的资金费参数并逐期重算资金费，确认我们读懂了机制；（3）\key{预测模型}，预测未来 4 小时的基差变化，与“预测不变”和“回到 24 小时均值”两个对照比较；（4）\key{回归机制}，估计偏离回来的速度，区分永续和现货谁在动，检验资金费何时起作用；（5）\key{深挖休市}，比较 05-08 参考指数规则变更前后休市期间的表现。第 8 节合起来回答研究问题。
+
+\section{相关工作}
+永续合约由 Shiller\cite{shiller}提出。He 等\cite{he}推导了永续的无套利价格，发现加密市场的实际价格对它的偏离明显大于外汇市场；Ackerer 等\cite{ackerer}在一般的资金费设计下给出了永续价格的表达式。这些工作讨论均衡价差，本文测量资金费在分钟数据上的实际拉力。同一资产在多个市场交易时，新信息先进入哪个市场，称为价格发现：Hasbrouck\cite{hasbrouck}用信息份额衡量各市场的贡献，Gonzalo 和 Granger\cite{gg}用各市场向均衡调整的系数判断谁在向谁靠拢，第 6 节沿用后一思路；Barclay 和 Hendershott\cite{bh}发现股票盘后交易仍有价格发现，第 7 节在黄金周末休市上检验类似现象。预测比较用 Diebold–Mariano 检验\cite{dm}，嵌套模型用 Clark–West 检验\cite{cw}，回归速度随时间的展开用局部投影\cite{jorda}估计。
+
+\section{数据与对齐}
+\subsection{数据与基本定义}
+真实金价来自 HistData 的 XAU/USD 一分钟数据，PAXG 代币来自 Binance 现货一分钟 K 线，两个永续来自 Binance U 本位合约的一分钟 K 线、参考指数、溢价指数和资金费历史，月度包缺的整天（如 06-29）从日度包补回。所有序列统一用“分钟 K 线结束时刻（UTC）”作索引。本文用到以下几个量，单位都是 bp（1\bp = 0.01\%）：
+\begin{itemize}
+\item \key{基差} $b_t=10^4\ln(\text{永续}_t/\text{现货}_t)$。XAU 永续对真实金价计算，PAXG 永续对 PAXG 代币计算。
+\item 基差拆成两段：\key{溢价} $=10^4\ln(\text{永续}/\text{参考指数})$，\key{指数差} $=10^4\ln(\text{参考指数}/\text{现货})$。资金费只根据溢价计算；指数差由参考指数的编制方法决定，资金费管不到它。
+\item \key{偏离} $d_t=b_t-\bar b_t^{\,24\text{h}}$，即基差减去过去 24 小时的平均基差。题面的基线模型假设基差会回到这个均值。
+\end{itemize}
+
+\subsection{真实金价的时钟}
+HistData 用本地时间记录，文档没有说清时区，也没有说时间戳标的是一分钟的开始还是结束。我们用两条互相独立的证据确定换算规则（图 \ref{fig:clock}）。
+\key{证据一}：真实金价和 XAU 永续是同一种资产，分钟收益应当高度相关。对每个交易日把 HistData 的时间平移 $k$ 分钟，找相关系数最高的 $k$。03-27 之前每天都是 $k=300$（\ckPreDays/\ckPreN 天），03-30 之后每天都是 $k=240$（\ckPostDays/\ckPostN 天），相关系数中位数 \ckCorrPost；$k$ 差 1 分钟，相关系数就降到 \ckNeighbor。所以时间戳标的是一分钟的\key{开始}。
+\key{证据二}：每天 1 小时的停盘在本地时钟上一般从 17:00 开始，03-09 至 03-26 却从 16:00 开始。美国 03-08 已进入夏令时，HistData 仍按 UTC−5 记时，直到 03-28/29 的周末（欧洲夏令时切换日）才改为 UTC−4。
+\key{换算规则}：UTC 分钟结束时刻 = 本地时间 + 5 小时（03-28 之前）或 + 4 小时（之后）+ 1 分钟。按“恒为 UTC−5”换算，XAU 测试期基线 RMSE 会从 \qClockBase 变成 \qClockEst\bp；按美国夏令时日期换算，也会变差到 \qClockUS\bp。
+\begin{figure}[htb]\centering\includegraphics[width=\linewidth]{figures/fig1_clock.pdf}
+\caption{真实金价时钟的两条证据。(a) 每个交易日两种平移下的相关系数，03-27 之前只有 +5 小时接近 1，03-30 之后换成 +4 小时（1 月初偏低是因为 XAU 永续成交稀少）；(b) 每日停盘的本地开始时刻，03-09 至 03-26 提前 1 小时。}\label{fig:clock}
+\end{figure}
+
+\subsection{题面未列出的数据问题}
+我们还发现 6 个题面没有列出的问题，照文档直接处理会得到错误或有偏的结果。表 \ref{tab:issues} 列出证据、处理方式和对结论数字的影响，较小的几项见仓库中的 \texttt{docs/DATA\_ISSUES.md}。
+\begin{table}[htb]\centering\footnotesize\renewcommand{\arraystretch}{1.03}
+\caption{题面未列出的数据问题}\label{tab:issues}
+\input{generated/tab_issues.tex}
+\end{table}
+
+\section{资金费机制复现}
+\subsection{公式、死区与时变参数}
+Binance 的资金费率为 $F=\big[\Pbar+\mathrm{clamp}(I-\Pbar,\,-0.05\%,\,+0.05\%)\big]/(8/N)$。$N$ 是这一期的结算间隔（小时），$\Pbar$ 是这一期溢价指数的加权平均（溢价指数由交易所按盘口价格计算，与上文的溢价很接近），$I$ 是按 8 小时计的利息项，$F$ 另有上下限。公式的含义是：$\Pbar$ 与 $I$ 相差不到 0.05\% 时，$F$ 恰好等于 $I$（按间隔折算），与溢价大小无关，本文称这个区间为\key{死区}；$\Pbar$ 超出死区后，$F$ 随 $\Pbar$ 一比一变化，官方数据正是如此（图 \ref{fig:funding}a、b）。
+
+参数在样本期内改过。如果用样本末的参数回填全部 9 个月，XAU 有 \repXAUnaivebig 期误差超过 0.1\bp，最大 \repXAUnaivemax\bp。所以我们从数据中逐段识别参数（表 \ref{tab:params}）：
 \begin{enumerate}
-\item 平均溢价 $\Pbar$ 稳定落在死区内时，官方 $F\cdot 8/N$ 就等于利息项本身，可以直接读出来。按此读出的值是：XAU 在 01-23 08:00 之后的 \fzIpost 期全部恰为 0（最大偏差 \fzIpostmax\bp），之前的 \fzIpre 期为 1\bp；PAXG 的 \fzIpaxg 期全部恰为 1\bp。
-\item 边界期的处理：01-23 08:00 结算的那一期仍用旧利息项，官方值是 0.5000\bp。如果照字面“自 08:00 起为 0”处理，这一期会错 \fzBoundNaive\bp。
-\item 01-30 16:00 这一期的字段是 $N=8$，但距离上一期只有 4 小时；按无上限公式算得 \fzRawOneThirty\bp，官方值恰为 5.0000\bp。这符合公告“UTC 12:15 起改为 8 小时结算、上下限 ±0.05\%”。备择解释“窗口 8h、按 $N=4$ 计算”给出 \fzAltOneThirty\bp，与官方值不符，予以排除。
-\item 02-28 12:00 公式值为 \fzCapRaw\bp，官方为 50.0000\bp，说明恢复后的上限是 0.5\%。下限在样本期内从未被触及。
+\item \key{利息项}：死区内 $F\cdot 8/N$ 就等于 $I$，可以直接读出。XAU 在 01-23 08:00 之后的 \fzIpost 期全部为 0，之前的 \fzIpre 期为 1\bp；PAXG 的 \fzIpaxg 期都是 1\bp。
+\item \key{生效时刻}：01-23 08:00 结算的那一期官方值为 0.5000\bp，仍按旧利息项计算。题面“自 08:00 起为 0”指的是 08:00 之后结算的期，照字面处理这一期会错 \fzBoundNaive\bp。
+\item \key{01-30 的临时调整}：01-30 16:00 这一期字段写 $N=8$，距上一期却只有 4 小时。按无上限公式算得 \fzRawOneThirty\bp，官方值恰为 5.0000\bp，正是公告所说“12:15 起改为 8 小时结算、上下限 ±0.05\%”的上限。
+\item \key{上限}：02-28 12:00 公式值为 \fzCapRaw\bp，官方值为 50.0000\bp，说明恢复后的上限是 0.5\%。下限在样本期内从未被触及。
 \end{enumerate}
-\textbf{$\Pbar$ 的构造}：Binance 每 5 秒采一个溢价样本，按样本序号 1,2,…,$n$ 线性加权平均。一分钟溢价 K 线给出每分钟 $\le$12 个样本的 OHLC 和样本数 \texttt{count}，据此构造：每分钟取 $(O+H+L+C)/4$，权重取这一分钟内样本序号之和（按 \texttt{count} 累计，空分钟权重为 0）。
-把每分钟的值分别换成最低价和最高价，就得到 $\Pbar$ 可能的上下界，再代入公式，得到每一期 $F$ 的\key{误差包络}。
-\begin{table}[H]\centering\small
-\begin{minipage}[t]{0.46\linewidth}\centering\setlength{\tabcolsep}{3.4pt}
+
+\subsection{平均溢价的算法与复现结果}
+交易所每 5 秒采一个溢价样本，在这一期内按样本序号 1, 2, …, $n$ 加权平均。公开数据只有每分钟溢价指数的开高低收和样本数，我们用每分钟的 $(O+H+L+C)/4$ 代表这一分钟，权重取这一分钟内样本序号之和。把每分钟的值换成最低价或最高价，就得到 $\Pbar$ 的下界和上界，代入公式得到每期 $F$ 的\key{误差范围}。
+
+表 \ref{tab:repro} 是逐期比对的结果。两个合约各 \repXAUn 期，PAXG 全部误差小于 0.1\bp，XAU 有 \repXAUbig 期超过 0.1\bp。其中 01-28、02-02、03-02 三期落在误差范围内，可以用分钟内的采样位置解释。只有 \fzOutsideDate 落在范围外：这一期的平均窗口里参考指数停滞了一个多小时，交易所结算用的溢价样本与归档数据不同（表 \ref{tab:issues} 第 2 行）。
+\begin{table}[htb]\centering\small
+\begin{minipage}[t]{0.47\linewidth}\centering\setlength{\tabcolsep}{3pt}
 \caption{资金费参数时间表（$N$ 以各期字段为准）}\label{tab:params}\input{generated/tab_params.tex}\end{minipage}\hfill
-\begin{minipage}[t]{0.52\linewidth}\centering\setlength{\tabcolsep}{3.4pt}
-\caption{逐期复现（每合约 \repXAUn 期，误差单位 bp）}\label{tab:repro}\input{generated/tab_repro.tex}\end{minipage}
+\begin{minipage}[t]{0.51\linewidth}\centering\setlength{\tabcolsep}{3pt}
+\caption{逐期复现误差（bp，每个合约 \repXAUn 期）}\label{tab:repro}\input{generated/tab_repro.tex}\end{minipage}
 \end{table}
-\vspace{-2pt}
-表 \ref{tab:repro} 中，XAU 有 \repXAUbig 期误差超过 0.1\bp：三期（01-28、02-02、03-02）落在误差包络内，可由分钟内采样位置解释；唯一落在包络外的 03-05 08:00，对应参考指数在 04:40–05:54 的异常停滞（\S6），说明交易所结算所用的溢价样本与归档的这段数据不同。
-时变参数是复现成立的前提：用样本末的参数回填全部 9 个月，XAU 会有 \repXAUnaivebig 期误差超过 0.1\bp，最大 \repXAUnaivemax\bp。
-\begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/fig2_funding.pdf}
-\caption{(a)(b) 官方 $F\cdot8/N$ 与 $\Pbar$ 的关系是一条“死区＋45°线”，拐点恰好在 $I\pm0.05\%$；(c) 逐期误差，XAU 只有 4 期超出 ±0.1\bp。}
+\begin{figure}[htb]\centering\includegraphics[width=\linewidth]{figures/fig2_funding.pdf}
+\caption{资金费复现。(a)(b) 官方 $F\cdot8/N$ 与平均溢价 $\Pbar$：灰色死区内是平台，死区外是 45° 线；(c) 逐期误差（我们算的减官方值），XAU 只有 \repXAUbig 期超出 ±0.1\bp。}\label{fig:funding}
 \end{figure}
 
-\section{预测模型：未来 4 小时基差变化}
-\textbf{样本与对照。}样本取 2026-01-02 起的每个整点 $t$，要求 $t$ 和 $t+4$h 两个时刻四个价格都有 K 线，不做填充。训练样本数 / 测试样本数：XAU \mXAUntrain/\mXAUntest，PAXG \mPAXGntrain/\mPAXGntest。
-基线回归 $y_t=\alpha+\beta(\text{基差}_t-\text{基差}_{24h})$ 的估计为：XAU $\alpha=\mXAUalpha$、$\beta=\mXAUbeta$；PAXG $\alpha=\mPAXGalpha$、$\beta=\mPAXGbeta$。
-\textbf{特征}（全部是窗口为 $(t-w,t]$ 的向后滚动量，由“截断不变性”测试保证无前视）：
-\begin{itemize}
-\item \key{偏离}：相对 1/4/24/72 小时均值的偏离。均值回归的速度与偏离持续了多久有关。
-\item \key{噪声}：相对 15 分钟均值的偏离，以及成交价相对盘口的偏差。这两项刻画的是报价噪声，它们会在几分钟内消失。
-\item \key{两腿}：溢价腿（永续−指数）和指数腿（指数−现货）各自的偏离。资金费只作用于溢价腿。
-\item \key{资金费}：本期截至 $t$ 的预估资金费（按当期参数计算）、严格早于 $t$ 的上一期官方值、距下一次结算的时间，以及“死区外×偏离”。
-\item \key{休市日历}：距收盘和距开盘的时间、预测窗口内的休市占比，以及“休市占比×偏离”。日历按事先公开的规则写成，不用 HistData 的实际缺口。
-\end{itemize}
-另外两组：\key{动量}（两腿各自 15 分钟、1 小时收益）看偏离由哪一腿造成；\key{波动与流动性}（基差波动、主动买入占比、零成交占比）看偏离是否可信，成交稀少时多是陈旧报价。参考指数、溢价指数、资金费三类数据都用了：资金费只作用于溢价腿，拆开两腿才能看出它在不在拉。题面事先告知 07-16 起基差中含 USDT/USD 偏离，所以特征只用偏离，不用基差和指数腿的绝对水平。这条规则在看测试集之前就定下了。
-\textbf{选型（只用训练期）}：采用滚动起点交叉验证，3、4、5、6 月依次作验证月，每一折只用 $t+4\text{h}\le$ 该月月初的样本训练。在交叉验证上选 Ridge 的正则化强度，并按特征组做向后剔除。
-结果：XAU 保留全部 7 组（交叉验证 RMSE \mXAUcv，基线为 \mXAUcvbase）；PAXG 保留\mPAXGgroups 四组。选定后用全部训练样本重估。
-表 \ref{tab:abl} 说明了每组特征的作用。对 XAU，剔除损失最大的是偏离、休市日历、资金费和两腿四组，与它锚定的现货会休市、溢价会累积成资金费相符。对 PAXG，贡献集中在偏离和波动/流动性两组，与它资金费长期贴近零的状态一致。
-\begin{table}[!t]\centering\small
+\section{预测模型}
+\subsection{任务、对照与特征}
+在每个整点 $t$ 预测未来 4 小时的基差变化 $y_t=b_{t+4\text{h}}-b_t$。样本从 2026-01-02 起，要求 $t$ 和 $t+4$h 两个时刻永续和现货都有 K 线，不做填充。$t+4$h 不晚于 07-01 的样本用于训练和调参，$t$ 从 07-01 起的样本只用于测试。题面规定了两个对照：\key{零预测} $\hat y_t=0$，认为基差不变；\key{基线} $\hat y_t=\alpha+\beta d_t$，认为基差会回到 24 小时均值，用训练样本做最小二乘，XAU 得 $\alpha=\mXAUalpha$、$\beta=\mXAUbeta$，PAXG 得 $\alpha=\mPAXGalpha$、$\beta=\mPAXGbeta$。$\beta$ 为负，表示偏离越大，接下来 4 小时回得越多。
+
+我们的模型是带 L2 正则的线性回归（Ridge），特征分七组（表 \ref{tab:feat}）。参考指数、溢价指数、资金费三类数据都用到了：参考指数把基差拆成溢价和指数差，溢价指数用来估算本期资金费，资金费历史提供上一期官方值。所有特征只用 $t$ 及以前的数据，测试代码会把数据截断在 $t$ 重算一遍，结果必须与全样本完全一致。题面事先告知 07-16 起 XAU 基差含 USDT/USD 偏离，所以特征只用偏离，不用基差和指数差的绝对水平，这条规则在看测试集之前就已定下。选型只用训练期：3 至 6 月依次作验证月，每次只用验证月之前的样本训练，据此选正则化强度并逐组尝试删除特征。XAU 保留全部七组（交叉验证 RMSE \mXAUcv，基线 \mXAUcvbase），PAXG 保留\mPAXGgroups 四组。表 \ref{tab:feat} 右两列显示，XAU 上最重要的是偏离、休市日历和资金费，PAXG 上主要是偏离和波动与流动性。
+\begin{table}[htb]\centering\footnotesize\renewcommand{\arraystretch}{1.03}
+\caption{特征组：怎么算、为什么放进去，以及从全模型去掉这一组后交叉验证 RMSE 变差多少（bp）}\label{tab:feat}
+\input{generated/tab_features.tex}
+\end{table}
+
+\subsection{结果：好多少，是不是运气}
+\begin{table}[htb]\centering\small
+\begin{minipage}[t]{0.5\linewidth}\centering
+\caption{测试期 RMSE（bp，按 $t$ 所在月份归属）}\label{tab:rmse}\input{generated/tab_rmse.tex}\end{minipage}\hfill
 \begin{minipage}[t]{0.47\linewidth}\centering
-\caption{测试期 RMSE（bp；按 $t$ 所在月份归属）}\label{tab:rmse}\input{generated/tab_rmse.tex}\end{minipage}\hfill
-\begin{minipage}[t]{0.51\linewidth}\centering\setlength{\tabcolsep}{2.5pt}
-\caption{特征组的作用（交叉验证 RMSE，bp）。剔除：从全模型去掉该组后变差多少；单加：基线变量＋该组比基线好多少}\label{tab:abl}\input{generated/tab_ablation.tex}\end{minipage}
+\caption{模型相对基线的改善是否可靠}\label{tab:sig}
+\begin{tabular}{lrr}
+\toprule
+ & XAU & PAXG \\
+\midrule
+RMSE 改善（bp） & \mXAUgain（\mXAUgainpct） & \mPAXGgain（\mPAXGgainpct） \\
+DM 统计量（$p$ 值） & \mXAUdm（\mXAUdmp） & \mPAXGdm（\mPAXGdmp） \\
+Clark–West 统计量 & \mXAUcw & \mPAXGcw \\
+重抽样 95\% 区间 & [\mXAUbootlo, \mXAUboothi] & [\mPAXGbootlo, \mPAXGboothi] \\
+逐月最小改善（bp） & \mXAUmingain & \mPAXGmingain \\
+去掉前 1\% 样本后 & \mXAUtrim & \mPAXGtrim \\
+\bottomrule
+\end{tabular}\end{minipage}
 \end{table}
-\par\textbf{是真的还是运气？}
-\begin{itemize}
-\item XAU：RMSE 改善 \mXAUgain\bp（\mXAUgainpct）。DM 检验的 HAC 滞后取 24（4 小时目标存在重叠），统计量 \mXAUdm（$p$=\mXAUdmp）；滞后取 4 时为 \mXAUdmfour。由于模型嵌套了基线，另做 Clark–West 检验，统计量 \mXAUcw。按天分块自助法给出 RMSE 差的 95\% 区间 [\mXAUbootlo, \mXAUboothi]；7、8、9 月逐月都有改善，最小 \mXAUmingain\bp。优势最集中的是窗口跨越日休的 21:00 样本，损失差最大的 1\% 样本贡献了 \mXAUtopshare 的改善，这正是休市日历特征针对的场景；剔除这些样本后改善仍有 \mXAUtrim\bp。
-\item PAXG：改善 \mPAXGgain\bp（\mPAXGgainpct）。DM $p$=\mPAXGdmp，Clark–West 统计量 \mPAXGcw，自助区间 [\mPAXGbootlo, \mPAXGboothi] 不含 0。PAXG 的锚 24 小时都在，基线相对零预测已降低 \mPAXGbasegain（XAU 为 \mXAUbasegain），可预测的部分大多已被均值回归吸收，模型在此基础上又稳定地多拿到一截。
-\end{itemize}
-梯度提升树把 XAU 进一步降到 \mXAUhgb，说明休市附近还有非线性结构可挖；PAXG 上为 \mPAXGhgb，线性模型已经足够。
+表 \ref{tab:rmse} 是测试期 RMSE，模型在两个合约、三个月份上都优于基线。判断这个差别是不是运气，我们做了三项检验（表 \ref{tab:sig}）。\key{DM 检验}逐个样本比较两个预测的平方误差，看差值的均值是否显著大于 0；相邻整点的 4 小时目标互相重叠，标准误按 24 阶滞后校正。模型包含基线的变量，属于嵌套比较，所以另做 \key{Clark–West 检验}。\key{分块重抽样}把测试期按 24 小时切块，有放回地重抽 2000 次，RMSE 改善的 95\% 区间在两个合约上都不含 0。XAU 的改善较为集中，损失差最大的 1\% 样本贡献了 \mXAUtopshare，它们多是预测窗口跨越每日停盘的样本，正是休市日历特征针对的情形；去掉这些样本后改善仍有 \mXAUtrim\bp。PAXG 的现货 24 小时交易，基线相对零预测已降低 \mPAXGbasegain（XAU 为 \mXAUbasegain），剩下可预测的部分较少。作为对照，梯度提升树的 RMSE 为 \mXAUhgb（XAU）和 \mPAXGhgb（PAXG）。
 
-\section{拉得多快、谁在动、是不是资金费在拉}
-\textbf{速度。}基线 $\beta$ 衡量的是相对 24 小时移动均值的回归，不是回到 0。每 4 小时剩下 $(1+\beta)$，半衰期为 $4\ln0.5/\ln(1+\beta)$，即 XAU \dXAUhl\,h、PAXG \dPAXGhl\,h。
-基差$_t$ 同时出现在 $y$ 和偏离里，分钟级报价噪声会机械地放大负的 $\beta$。用 $t-15$ 分钟的偏离作工具变量剥离这部分噪声，得到去噪后的 $\beta$ 为 \dXAUbetaiv / \dPAXGbetaiv，半衰期 \dXAUhliv\,h / \dPAXGhliv\,h，这是基差真实的回归速度。
-局部投影（图 3a）显示，XAU 的 $\beta_1=\dXAUlpone$，即 1 小时内回吐约四成；$\beta_h$ 在 $h=\dXAUlpmaxh$ 小时附近最深（\dXAUlpmax）。PAXG 的 $\beta_1=\dPAXGlpone$，24 小时内一直加深到 \dPAXGlpend，回归更快、更彻底。
-模型系数把回归拆成两段：刚出现的偏离 4 小时内回吐 \dXAUfresh（PAXG 为 \dPAXGfresh）；已持续 4 小时以上的偏离回吐 \dXAUold，对应半衰期 XAU \dXAUhlold\,h、PAXG \dPAXGhlold\,h。一个数字的半衰期掩盖了这两种截然不同的速度。
-\textbf{谁向谁靠。}识别的关键是扣掉两腿共同的金价波动。直接用 4 小时收益回归时标准误为 \dXAUrawseperp；以第三个独立黄金价格为参照（XAU 用 PAXG 代币，PAXG 用 XAU 永续）后，标准误降到 \dXAUseperp，而两腿系数之差仍严格等于 $\beta$。
-结果（图 3b）：XAU 永续腿 $\alpha_{\text{永续}}=\dXAUaperp\,(\pm\dXAUseperp)$，不显著；现货腿 $\alpha_{\text{现货}}=\dXAUaspot\,(\pm\dXAUsespot)$。工具变量版本同样如此（\dXAUaperpiv / \dXAUaspotiv）。也就是说，\key{基差回归主要是真实金价追上永续}：价格发现发生在 24 小时交易、可以加杠杆的永续上。
-05-08 之后永续承担的份额从 \dXAUsharepre 升到 \dXAUsharepost。PAXG 两腿大约四六开（\dPAXGshareall）。
-\textbf{是不是资金费在拉？}把基差拆成溢价腿和指数腿：XAU 回归的 \dXAUpremshare 发生在溢价腿（\dXAUpremleg，指数腿为 \dXAUidxleg）。结合上一段的结论，这意味着参考指数和金价一起追上了永续，而不是永续被拉回指数。
-\begin{itemize}
-\item 死区内外对比：溢价腿的回归系数在死区内为 \dXAUbetadead、死区外为 \dXAUbetaout；按偏离幅度分档后两者一致（2–4\bp 档为 \dXAUbinDead 和 \dXAUbinOut），PAXG 也相同（\dPAXGbetadead 与 \dPAXGbetaout）。回归速度不取决于资金费是否随溢价变化，与“现货追上永续”的结论吻合。
-\item 资金费的作用集中体现为结算前后的“锯齿”（图 4）。XAU 应付资金费为正（$F>I$，\evNup 期）时，结算前 1 小时溢价被压低 \evUpPre\bp，结算后 5 分钟内弹回 +\evUpJump\bp，其中第 1 分钟就弹回 \evUpOne\bp；把事件点挪到结算前 2 小时做安慰剂检验，同一窗口只有 \evPlUpJump\bp。$F<I$ 时方向相反（结算前 +\evDnPre、结算后 \evDnJump\bp）。
-\item 机制很清楚：持仓者在结算前减仓以避开资金费，结算后再回补，资金费的拉力恰好持续到结算那一刻。PAXG 的锯齿不超过 \evPaxgMax\bp，与它每期 \fzPAXGFmean\bp 的资金费量级一致。
-\end{itemize}
-\begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/fig3_speed.pdf}
-\caption{(a) 局部投影 $\beta_h$ 与 95\% 区间（训练期）；(b) 4 小时回归中两腿各自承担的份额（相对第三市场；05-08 前后对比）；(c) 测试期平方误差改进的累计占比，虚线为匀速累积。XAU 在 08-20、08-26 两次日休附近出现跳升。}
-\end{figure}
-\begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/fig4_event.pdf}
-\caption{结算时刻前后溢价指数的平均路径（相对 −60 分钟）。实线是真实结算时刻，虚线是安慰剂（结算前 2 小时的整点）。$F<I$ 组的安慰剂里混入了 22:00 UTC 的日休开盘，所以也有跳动。}
+\section{回归机制：多快、谁在动、资金费何时起作用}
+\subsection{偏离多久回来}
+基线的 $\beta$ 表示每过 4 小时偏离剩下 $1+\beta$，半衰期为 $4\ln 0.5/\ln(1+\beta)$：XAU \dXAUhl 小时，PAXG \dPAXGhl 小时。这是回到 24 小时均值的速度，而且偏快：$b_t$ 同时出现在 $y_t$ 和 $d_t$ 中，$t$ 时刻报价的瞬间误差会让 $d_t$ 变大、$y_t$ 变小，看起来像回归，其实只是噪声消失了。我们用 15 分钟前的偏离作工具变量重新估计（瞬间噪声在 15 分钟内不相关），得到 $\beta$ 为 \dXAUbetaiv 和 \dPAXGbetaiv，半衰期 \dXAUhliv 和 \dPAXGhliv 小时。图 \ref{fig:dyn}(a) 把预测期从 1 小时延长到 24 小时，XAU 1 小时内回吐约四成（$\beta_1=\dXAUlpone$），PAXG 回得更快、更彻底。回归有两种速度：刚出现的偏离 4 小时内回吐 \dXAUfresh（PAXG 为 \dPAXGfresh），已持续 4 小时以上的偏离半衰期为 \dXAUhlold 小时（PAXG 为 \dPAXGhlold 小时）。
+
+\subsection{是永续在动，还是现货在动}
+基差的变化等于永续的涨跌减去现货的涨跌。把这两部分分别对偏离 $d_t$ 回归，得到两个系数，二者之差正好等于 $\beta$。如果偏离主要靠永续回落来消除，说明有力量（例如资金费）把永续拉回现货；如果主要靠现货上涨，说明是现货在追永续，价格先在永续上形成。直接用 4 小时涨跌做这两个回归，估计很不准：4 小时里金价本身的涨跌远大于几个 bp 的偏离，XAU 永续系数的标准误达到 \dXAUrawseperp。我们从永续和现货的涨跌中都减去第三个黄金价格的涨跌（XAU 用 PAXG 代币，PAXG 用 XAU 永续），共同的金价波动相互抵消，两个系数之差仍然等于 $\beta$，标准误降到 \dXAUseperp。
+
+结果见图 \ref{fig:dyn}(b)。偏离 1\bp 时，接下来 4 小时 XAU 永续相对参照只变化 \dXAUaperp\bp（标准误 \dXAUseperp，不显著），真实金价上涨 \dXAUaspot\bp。永续只承担 \dXAUshareall 的调整，其余由真实金价追上永续完成；05-08 之后永续的份额从 \dXAUsharepre 升到 \dXAUsharepost。PAXG 永续承担 \dPAXGshareall。用工具变量重新估计，结论相同。
+
+\subsection{资金费什么时候在拉}
+资金费只作用于溢价。如果它是回归的主力，回归应当发生在溢价上，并且是永续向参考指数移动。拆开看，XAU 回归的 \dXAUpremshare 发生在溢价上（PAXG 为 \dPAXGpremshare）；结合 6.2 节永续基本不动的结果，溢价缩小的方式是参考指数随金价一起追上永续。再看死区：死区内资金费不随溢价变化，如果资金费在拉，死区外的回归应当更快。按偏离幅度分档后两者几乎相同，XAU 在 2–4\bp 档内死区内外的系数为 \dXAUbinDead 和 \dXAUbinOut，PAXG 为 \dPAXGbetadead 和 \dPAXGbetaout。
+
+资金费留下的痕迹集中在结算时刻（图 \ref{fig:dyn}c）。XAU 多头应付的资金费高于利息项（$F>I$，\evNup 期）时，结算前 1 小时溢价指数平均变化 \evUpPre\bp，结算后 5 分钟内回升 \evUpJump\bp，其中第 1 分钟就回升 \evUpOne\bp。在结算前 2 小时的整点做同样的分析作为对照，同一窗口只有 \evPlUpJump\bp。$F<I$ 时方向相反。合理的解释是持仓者在结算前减仓以避开资金费，结算后再加回来。PAXG 的资金费很小，这种锯齿不超过 \evPaxgMax\bp。
+\begin{figure}[htb]\centering\includegraphics[width=\linewidth]{figures/fig3_dynamics.pdf}
+\caption{回归机制。(a) 偏离出现后 $h$ 小时的回归系数 $\beta_h$ 与 95\% 区间（训练期），点线 $-0.5$ 表示回吐一半；(b) 4 小时内偏离的消除有多少由永续完成、多少由现货完成；(c) XAU 结算前后溢价指数的平均路径（相对结算前 60 分钟），实线为真实结算时刻，虚线为结算前 2 小时的对照（$F<I$ 组的对照混入了 22:00 UTC 停盘后的开盘，所以也有跳动）。}\label{fig:dyn}
 \end{figure}
 
-\section{深挖：现货黄金休市时发生了什么}
-05-08 21:00 起，休市期间的 XAU 参考指数改由永续自身盘口生成，此前冻结在最后报价。这是一个现成的自然实验。样本含 \clNwk 个周末/长假和 \clNday 次日休。
+\section{深挖：现货休市时发生了什么}
+05-08 21:00 起，休市期间的 XAU 参考指数改由永续自己的盘口生成，此前冻结在最后一笔报价，正好可以比较两种指数设计。样本含 \clNwk 个周末或长假、\clNday 次每日停盘。
 \begin{itemize}
-\item \key{05-08 之前，资金费拉向错误的锚。}周末休市期间指数冻结的时间占 \clFrozenPre，溢价腿中位数为 \clPremPre\bp。整段休市内结算的 \clNpreClosed 期资金费，绝对值平均 \clFpreClosed\bp，开市时只有 \clFpreOpen\bp；其中 \clFpreNZ 不为 0。每个周末累计的资金费绝对值平均 \clWkFundAbs\bp，带符号平均为 +\clWkFundSigned\bp（多头付钱）。
-即便如此，永续在周末的涨跌仍然领先开盘金价：斜率 \clWkPreslope（95\% 区间 [\clWkPrelo, \clWkPrehi]），$R^2$=\clWkPrersq。永续平均还多走了 \clWkExcess\bp，开盘时 $|$基差−周五基差$|$ 平均达 \clReopenPre\bp。
-\item \key{05-08 之后，资金费在休市期间完全关闭。}指数跟随永续，冻结占比 \clFrozenPost，溢价腿中位数 \clPremPost\bp；整段休市内结算的 \clNpostClosed 期资金费全部恰为 0。这时没有任何机制把永续锚在真实金价上，但永续反而更准：斜率 \clWkPostslope [\clWkPostlo, \clWkPosthi]，$R^2$=\clWkPostrsq，方向命中率 \clWkPosthit；开盘缺口的标准差从 \clWkPostsd 降到残差 \clWkPostresid\bp；开盘时基差跳变只有 \clReopenPost\bp。
-\item PAXG 代币对开盘缺口的预测同样有效（斜率 \clWkPostPaxgslope，$R^2$=\clWkPostPaxgrsq）。所以信息来自“24 小时交易的黄金价格”本身，不是 XAU 永续独有的。
-\item 预告作用集中在周末。每日 1 小时休市的缺口标准差为 \clDayPostsd\bp，与报价噪声同量级（$R^2$=\clDayPostrsq），信息量主要来自长时间休市。
+\item \key{05-08 之前，资金费把永续拉向过时的价格。}周末参考指数 \clFrozenPre 的时间处于冻结状态，溢价中位数为 \clPremPre\bp。休市期间结算的 \clNpreClosed 期资金费，绝对值平均 \clFpreClosed\bp，开市时只有 \clFpreOpen\bp。
+\item \key{05-08 之后，休市期间资金费不再起作用。}参考指数跟着永续走，溢价中位数为 \clPremPost\bp，休市期间结算的 \clNpostClosed 期资金费全部为 0。
+\item \key{永续的周末走势能预告开盘。}05-08 之后共 \clWkPostn 个周末，用休市期间 XAU 永续的涨跌回归开盘时的金价缺口，斜率为 \clWkPostslope（95\% 区间 [\clWkPostlo, \clWkPosthi]），$R^2$=\clWkPostrsq，方向命中率 \clWkPosthit，缺口的标准差从 \clWkPostsd\bp 降到 \clWkPostresid\bp。05-08 之前也有预告作用（斜率 \clWkPreslope，$R^2$=\clWkPrersq），但开盘时基差平均跳动 \clReopenPre\bp，之后只有 \clReopenPost\bp。
+\item \key{信息来自 24 小时交易的黄金价格。}PAXG 代币同样能预告开盘缺口（$R^2$=\clWkPostPaxgrsq）。每日 1 小时停盘太短，缺口标准差只有 \clDayPostsd\bp，与报价噪声同一量级，没有预告作用（$R^2$=\clDayPostrsq）。
 \end{itemize}
-\begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/fig5_closure.pdf}
-\caption{(a)(b) 05-08 前后各一个跳空最大的周末（灰色为现货休市）。之前参考指数（橙）整个周末是一条直线；之后指数贴着永续走。(c) 周末永续涨跌与开盘金价缺口，虚线为 45° 线。}
+休市期间资金费要么拉向冻结的旧价，要么不拉，永续反而成了金价最好的实时估计。
+\begin{figure}[htb]\centering\includegraphics[width=\linewidth]{figures/fig4_closure.pdf}
+\caption{现货休市。(a)(b) 05-08 前后各取跳空最大的一个周末（灰色为现货休市），之前参考指数（橙）整个周末是一条直线，之后指数贴着永续走；(c) 周末 XAU 永续涨跌与开盘金价缺口，虚线为 45° 线。}\label{fig:closure}
 \end{figure}
 
-\section{数据里未被题面列出的问题（加分项，完整清单见 \texttt{docs/DATA\_ISSUES.md}）}
-{\small\renewcommand{\arraystretch}{1.02}\noindent\input{generated/tab_issues.tex}\par}
-\noindent\note{\small 其余几项见仓库：月度文件缺的最后一分钟恰好都落在整点样本上；06-29 整天可用日度归档补回；资金费原值用 Java BigDecimal 格式（\texttt{0E-8}、\texttt{-8.2E-7}）；公告所说的原上下限 ±0.375\% 与 01-25 官方值 0.4417\% 矛盾。}
+\section{结论}
+\key{资金费能不能把永续拉回现货？}基差偏离会回来，但主要不是资金费拉回来的。在 4 小时尺度上，XAU 永续只承担 \dXAUshareall 的调整，偏离主要靠真实金价追上永续来消除，死区内外的回归速度也相同。资金费的作用集中在结算前后：持仓者为避开资金费在结算前调整仓位，溢价指数被压低，结算后几分钟内弹回。
 
-\section{回答研究问题}
-\textbf{能拉回，而且拉力的对象、时机和作用范围都可以精确界定。}
-\begin{itemize}
-\item \key{对象}：资金费锚定的是参考指数。指数与真实金价之间的错位由指数的构造决定，例如 07-16 之后平均 \qUsdtAfter\bp 的 USDT/USD 偏离、HistData 买价约 \qHdBias\bp 的偏低。
-\item \key{时机}：拉力集中在结算前约 1 小时，结算后几分钟内释放。
-\item \key{范围}：死区宽 ±0.05\%。PAXG 永续 9 个月持续折价约 4\bp，稳定停在死区下沿，资金费平均每期 \fzPAXGFmean\bp，空头持有对冲几乎零成本。
-\end{itemize}
-\textbf{拉得多快}：基差回归的半衰期约 3–5 小时，主力是现货追上永续；资金费的作用体现在结算时点的溢价锯齿上。\textbf{什么时候拉不动}：一是溢价在死区内；二是现货休市，05-08 之前拉向冻结的旧价，之后资金费恒为 0；三是指数与现货之间存在错位。
-两个合约的差别也来自这里：PAXG 的锚 24 小时都在，回归更快、更彻底（局部投影 \dPAXGlpend），均值回归基线已经抓住了大部分可预测性。表 \ref{tab:cmp} 把两个合约的关键数字放在一起。
-\begin{table}[H]\centering\footnotesize\renewcommand{\arraystretch}{1.0}
-\caption{两个对照案例：同一套资金费公式，锚定不同的现货}\label{tab:cmp}\input{generated/tab_compare.tex}
-\end{table}
+\key{拉得多快？}按基线 $\beta$ 计算，半衰期 XAU \dXAUhl 小时、PAXG \dPAXGhl 小时，去掉报价噪声后为 \dXAUhliv 和 \dPAXGhliv 小时。刚出现的偏离回得快，持续的偏离回得慢。模型利用这种差别，加上休市日历和资金费信息，测试期 RMSE 比基线低 \mXAUgainpct（XAU）和 \mPAXGgainpct（PAXG）。
+
+\key{什么时候拉不动？}有三种情况。一是溢价处在死区内或死区边缘：PAXG 永续的溢价长期停在死区下沿附近（中位数 \dPAXGPmed\bp），资金费每期平均只有 \fzPAXGFmean\bp，这个折价一直没有被拉平。二是现货休市：05-08 之前资金费拉向冻结的旧价，之后休市期间资金费为 0。三是参考指数本身偏离现货：资金费只管溢价，管不到指数差，07-16 起的 USDT/USD 换算让 XAU 的指数差平均从 \qUsdtBefore\bp 扩大到 \qUsdtAfter\bp。
+
+{\scriptsize\linespread{1.0}\selectfont\renewcommand{\refname}{\normalsize 参考文献}
+\begin{thebibliography}{9}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\bibitem{shiller} Shiller R J. Measuring asset values for cash settlement in derivative markets: hedonic repeated measures indices and perpetual futures. Journal of Finance, 1993, 48(3): 911--931.
+\bibitem{he} He S, Manela A, Ross O, von Wachter V. Fundamentals of perpetual futures. arXiv:2212.06888, 2022.
+\bibitem{ackerer} Ackerer D, Hugonnier J, Jermann U J. Perpetual futures pricing. Mathematical Finance, 2026, 36(3): 481--499.
+\bibitem{hasbrouck} Hasbrouck J. One security, many markets: determining the contributions to price discovery. Journal of Finance, 1995, 50(4): 1175--1199.
+\bibitem{gg} Gonzalo J, Granger C W J. Estimation of common long-memory components in cointegrated systems. Journal of Business \& Economic Statistics, 1995, 13(1): 27--35.
+\bibitem{bh} Barclay M J, Hendershott T. Price discovery and trading after hours. Review of Financial Studies, 2003, 16(4): 1041--1073.
+\bibitem{dm} Diebold F X, Mariano R S. Comparing predictive accuracy. Journal of Business \& Economic Statistics, 1995, 13(3): 253--263.
+\bibitem{cw} Clark T E, West K D. Approximately normal tests for equal predictive accuracy in nested models. Journal of Econometrics, 2007, 138(1): 291--311.
+\bibitem{jorda} Jordà Ò. Estimation and inference of impulse responses by local projections. American Economic Review, 2005, 95(1): 161--182.
+\end{thebibliography}}
 
 \clearpage
 \appendix
+\linespread{1.18}\selectfont
 \ctexset{section={name={附录\,},number=\Alph{section}}}
-\section{下一步：周末黄金“影子价格”能否用来对冲开盘跳空}
-\textbf{方向与价值。}把周末仍在交易的黄金价格（XAU 永续、PAXG 代币与永续）合成一个“影子价格”，用来估计周日开盘时的金价，并用它对冲持有到周末的黄金敞口。
-本项目中 05-08 之后的 \clWkPostn 个周末里，永续涨跌解释了开盘缺口方差的 \clWkPostrsq，把缺口的标准差从 \clWkPostsd\bp 降到 \clWkPostresid\bp（方差降低 \clVarCut）。
-以 1000 万美元的周末黄金敞口为例，按正态近似（1.645 倍标准差），95\% 单边跳空损失从约 \clVaRun\bp 降到 \clVaRhe\bp，即每个周末少承担约 \clVaRsave 万美元的尾部风险。
-主要成本有三项：
-\begin{itemize}
-\item 手续费：假设 Binance U 本位合约普通用户费率（taker 0.05\%、maker 0.02\%/边）、不计滑点，永续往返一次 taker 约 10\bp、maker 约 4\bp，即每个周末 0.4–1 万美元；
-\item 资金费：05-08 之后周末资金费恒为 0（\clNpostClosed/\clNpostClosed 期），不构成成本；
-\item 基差风险：开盘后永续相对现货的基差，开盘时平均 \clReopenPost\bp。
-\end{itemize}
-扣除成本后，它的价值在风险端：用小额确定成本换掉约一半的周末尾部风险。
+\section{下一步：用周末的黄金价格对冲开盘跳空}
+\key{方向。}周末真实金价休市，但 XAU 永续、PAXG 代币和 PAXG 永续都在交易。把它们合成一个“周末影子金价”，用来估计周日开盘时的金价，并据此对冲持有过周末的黄金敞口。
 
-\textbf{支撑它的数字。}斜率 \clWkPostslope（95\% 区间 [\clWkPostlo, \clWkPosthi]，包含 1），方向命中率 \clWkPosthit；PAXG 代币同样有效（$R^2$=\clWkPostPaxgrsq）。05-08 之前指数冻结时斜率是 \clWkPreslope，说明这个关系依赖于指数规则。
-
-\textbf{第一个实验（一周内可完成）。}XAU 永续 2025-12 才上市，新指数规则下的周末只有 \clWkPostn 个；PAXG 代币 2020-08 起在 Binance 现货交易，与 HistData 拼接可把样本扩到约 300 个周末。
+\key{做成了能带来什么。}第 7 节中，05-08 之后的 \clWkPostn 个周末里，永续的涨跌解释了开盘缺口方差的 \clWkPostrsq，缺口的标准差从 \clWkPostsd\bp 降到 \clWkPostresid\bp（方差降低 \clVarCut）。以 1000 万美元的周末黄金敞口为例，按正态近似（1.645 倍标准差）计算，95\% 单边跳空损失从约 \clVaRun\bp 降到 \clVaRhe\bp，每个周末少承担约 \clVaRsave 万美元的尾部风险。主要成本有三项：
 \begin{enumerate}
-\item 用滚动窗口估计对冲比率，做严格的样本外检验；
-\item 按年份检验斜率是否稳定；
-\item 比较对冲前后的 95\%/99\% 尾部损失，并扣除 maker/taker 两档费用。
+\item 手续费：按 Binance U 本位合约普通用户费率（吃单 0.05\%、挂单 0.02\%，每边计）且不计滑点，永续开仓加平仓约 10\bp（吃单）或 4\bp（挂单），即每个周末 0.4 万至 1 万美元；
+\item 资金费：05-08 之后休市期间结算的 \clNpostClosed 期资金费全部为 0，不构成成本；
+\item 基差风险：开盘时永续相对金价的基差平均跳动 \clReopenPost\bp。
 \end{enumerate}
-\key{放弃条件}：样本外 $R^2<0.4$；或任意一年斜率的 95\% 区间包含 0；或扣费后 99\% 尾部损失的降幅不到 20\%。
+扣除这些成本后，它的价值在于用一笔小而确定的费用，换掉约一半的周末尾部风险。
 
-\textbf{为什么不选其他看起来也合理的方向。}
+\key{支撑它的数字。}周末回归的斜率为 \clWkPostslope（95\% 区间 [\clWkPostlo, \clWkPosthi]，包含 1），方向命中率 \clWkPosthit；PAXG 代币同样有效（$R^2$=\clWkPostPaxgrsq）。05-08 之前指数冻结时斜率为 \clWkPreslope，说明这一关系与指数规则有关。
+
+\key{第一个实验，一周内能完成。}XAU 永续 2025-12 才上市，新规则下的周末只有 \clWkPostn 个，样本太少。PAXG 代币 2020-08 起在 Binance 现货交易，与 HistData 拼接后可以把样本扩到约 300 个周末。实验分三步：
+\begin{enumerate}
+\item 用滚动窗口估计对冲比率，做样本外检验；
+\item 按年份检验斜率是否稳定；
+\item 比较对冲前后 95\% 和 99\% 的尾部损失，并扣除挂单、吃单两档手续费。
+\end{enumerate}
+
+\key{什么结果会让我放弃。}样本外 $R^2<0.4$；或任意一年斜率的 95\% 区间包含 0；或扣费后 99\% 尾部损失的降幅不到 20\%。
+
+\key{为什么不选其他看起来也合理的方向。}
 \begin{itemize}
-\item 结算锯齿交易：平均每次只弹回 \evAvgJump\bp，而且一半以上在第 1 分钟完成，连 maker 往返 4\bp 都覆盖不了。
-\item 周末 XAU 永续与 PAXG 价差的开盘回归：价差平均 \clSpreadPost\bp，开盘后 4 小时回吐 \clSpreadRev，毛收益约 \clSpreadGross\bp，低于两条腿的成本。
-\item 继续打磨 4 小时模型：模型已在 XAU 上取得 \mXAUgainpct 的稳定改善，增量集中在日休附近；同样的休市信息用在周末对冲上，价值量级更大。
-\item PAXG 资金费套利（卖永续、持代币）：年化约 \fzPAXGFann，与美元无风险利率相当，而市场恰好把溢价压在资金费约为 0 的位置，说明套利空间已被吃掉。
+\item 交易结算前后的锯齿：平均每次只回升 \evAvgJump\bp，一半以上在第 1 分钟完成，连挂单开平一次的 4\bp 成本都覆盖不了。
+\item 周末 XAU 永续与 PAXG 的价差在开盘后的回归：价差平均 \clSpreadPost\bp，开盘后 4 小时回吐 \clSpreadRev，毛收益约 \clSpreadGross\bp，低于两边的交易成本。
+\item 继续改进 4 小时预测模型：模型已在 XAU 上稳定改善 \mXAUgainpct，增量主要来自每日停盘附近；同样的休市信息用在周末对冲上，价值量级更大。
+\item PAXG 资金费套利（卖永续、持有代币）：年化约 \fzPAXGFann，与美元无风险利率相当，套利空间已基本被市场吃掉。
 \end{itemize}
 
 \clearpage
 \section{核对数字}
-{\small
-\textbf{两个时刻的价格与基差}（价格照原始文件写，基差保留 3 位小数，单位 bp；对应的 HistData 本地 K 线标签为 \texttt{\chkAlocal} 和 \texttt{\chkBlocal}，各只有 \chkAhdrows 行）\\[1pt]
-\input{generated/tab_check_prices.tex}
+\key{两个时刻的价格与基差。}价格照原始文件写，基差保留 3 位小数，单位 bp。对应的 HistData 本地 K 线标签为 \texttt{\chkAlocal} 和 \texttt{\chkBlocal}，各只有 \chkAhdrows 行。\par\vspace{2pt}
+{\small\input{generated/tab_check_prices.tex}\par}
 
 \medskip
-\textbf{时钟}：HistData 标签是分钟\key{起点}，本地时间在 2026-03-27（含）之前为 UTC−5，2026-03-29 开盘起为 UTC−4（切换发生在 03-28/29 周末休市内）。\\
-\quad UTC 分钟结束时刻 = 本地标签 + 5h（或 4h）+ 1 分钟。例：\texttt{20260114 095900} → 2026-01-14 15:00；\texttt{20260819 095900} → 2026-08-19 14:00。
+\key{时钟。}HistData 的时间戳标的是一分钟的开始。本地时间在 2026-03-27（含）之前为 UTC−5，2026-03-29 开盘起为 UTC−4，切换发生在 03-28/29 的周末休市内。换算公式为：UTC 分钟结束时刻 = 本地时间 + 5 小时（或 4 小时）+ 1 分钟。例如 \texttt{20260114 095900} 对应 2026-01-14 15:00，\texttt{20260819 095900} 对应 2026-08-19 14:00。
 
 \medskip
-\textbf{三期资金费}（官方值照原始文件；官方 bp 为十进制精确移位）\\[1pt]
-\input{generated/tab_check_funding.tex}
+\key{三期资金费。}官方值照原始文件写，换成 bp 时做十进制精确移位。\par\vspace{2pt}
+{\small\input{generated/tab_check_funding.tex}\par}
 
 \medskip
-\textbf{复现误差与预测模型的样本、系数}（比对的是结算时刻在 (2026-01-01, 2026-10-01) 内、平均窗口完整落在区间内的全部已公布期；06-24 04:00 官方缺失，不参与比对）\\[1pt]
-\input{generated/tab_check_model.tex}
+\key{复现误差与预测模型的样本、系数。}比对范围是结算时刻在 2026-01-01 与 2026-10-01 之间（均不含）、平均窗口完整落在区间内的全部已公布期；06-24 04:00 官方缺失，不参与比对。\par\vspace{2pt}
+{\small\input{generated/tab_check_model.tex}\par}
 
 \medskip
-\textbf{测试期 RMSE（bp）}\\[1pt]
-\input{generated/tab_rmse.tex}
-}
+\key{测试期 RMSE（bp）。}\par\vspace{2pt}
+{\small\input{generated/tab_rmse.tex}\par}
 
 \clearpage
 \section{AI 使用说明}
-\textbf{工具与分工。}
+\key{用了哪些工具，哪些部分由 AI 完成。}
 \begin{itemize}
-\item 题目 PDF 转 Markdown：视觉 OCR，并与 PDF 文本层交叉核对；
-\item 下载脚本、全部分析代码、图表和报告初稿：由 Claude Code（Anthropic Claude，命令行 Agent）在本地终端完成；
-\item 规划期：让另一个 AI 子代理以“审稿人”身份审了一遍方案，采纳了其中的建议，包括截断不变性测试、Clark–West 检验、工具变量修正噪声偏差、日历只用事先可知的规则；
-\item 研究问题的取舍、深挖角度的选择、结论的措辞：由我决定。
+\item 题目 PDF 转成 Markdown：用视觉 OCR 识别，再与 PDF 文本层逐段核对。
+\item 下载脚本、全部分析代码、图表和报告初稿：由 Claude Code（Anthropic 的命令行编程 Agent）在本地终端完成。
+\item 方案规划阶段：让另一个 AI 子代理以审稿人的身份审了一遍方案，采纳了它的四条建议，分别是截断不变性测试、Clark–West 检验、用工具变量处理报价噪声、交易日历只用事先公开的规则。
+\item 研究问题的取舍、深挖角度的选择和结论的措辞由我决定。
 \end{itemize}
 
-\textbf{我亲自核对过的数字与核对方式。}
+\key{我亲自核对过的数字，以及怎么核的。}
 \begin{enumerate}
-\item 核对表中的价格：不经过分析管线，直接用 \texttt{io\_raw.raw\_*} 从原始 zip 读出对应那一行的文本，再手算 $\ln$ 比值核对基差；
-\item 三期资金费：官方值核对原始字符串；对 02-02 00:00 这一期，取 240 根溢价 K 线手算加权平均，误差 \chkFzErr\bp；
-\item 时钟规则：逐日看偏移扫描和日休作息两张表，并抽查了 03-29 当晚 18:00–23:59 逐小时的相关系数（只有 $k=240$ 时接近 1）；
-\item 测试：\texttt{pytest} 共 23 项，全部通过。内容包括时钟、合并规则、核对时刻、边界期、上限期、截断不变性；其中还有一个故意偷看未来的特征，必须被测试抓到。
+\item 两个时刻的价格：不经过分析代码，直接从原始 zip 读出对应那一行文本，手算对数比值核对基差。仓库里的 \texttt{scripts/verify\_check\_numbers.py} 把这个过程写成了独立脚本。
+\item 三期资金费：官方值逐字核对原始字符串。02-02 00:00 这一期取 240 根溢价指数 K 线手算加权平均，与管线结果相差 \chkFzErr\bp。
+\item 时钟规则：逐日查看偏移扫描和停盘时刻两张表，并抽查了 03-29 当晚 18:00–23:59 每小时的相关系数，只有平移 240 分钟时接近 1。
+\item 自动测试：\texttt{pytest} 共 23 项，全部通过，覆盖时钟换算、同一分钟多行的合并、核对时刻、01-23 边界期、02-28 上限期和截断不变性。其中一项故意构造了一个偷看未来的特征，测试必须能把它抓出来。
 \end{enumerate}
 
-\textbf{一个中途被数据推翻的判断。}下载数据时，Agent 写的数据说明里说 HistData“像美国东部时间”，我起初据此按“不随夏令时变化的 EST”（恒为 UTC−5）处理。逐日偏移扫描推翻了这个判断：03-30 起最优偏移变成 240 分钟，相关系数 \ckCorrPost，而 300 分钟时只有 0 左右；03-09 至 03-26 的日休又出现在本地 16:00。按恒 UTC−5 处理，XAU 基差的标准差会从 \qClockSdRule\bp 膨胀到 \qClockSdEst\bp，测试期基线 RMSE 会变成 \qClockEst\bp。
+\key{体会一：一个被数据推翻的判断。}下载数据时，Agent 写的数据说明称 HistData“像美国东部时间”，我起初按“恒为 UTC−5、不随夏令时变化”处理。逐日偏移扫描推翻了这个判断：03-30 起最优平移变成 240 分钟，相关系数 \ckCorrPost，而平移 300 分钟时接近 0；03-09 至 03-26 的每日停盘又出现在本地 16:00。如果按恒为 UTC−5 处理，XAU 基差的标准差会从 \qClockSdRule\bp 膨胀到 \qClockSdEst\bp，测试期基线 RMSE 会变成 \qClockEst\bp。
 
-\textbf{一个抓到的 AI 错误。}Agent 第一版“谁向谁靠”直接用两腿的 4 小时收益回归，报告“永续承担 \dXAUrawshare 的调整”。份额为负说明估计本身出了问题：标准误达到 \dXAUrawseperp，系数完全被共同金价波动淹没。改用第三市场作参照后，标准误降到 \dXAUseperp。
+\key{体会二：一个抓到的 AI 错误。}研究“是永续在动还是现货在动”时（第 6.2 节），Agent 的第一版做法是把 XAU 永续和真实金价各自的 4 小时涨跌直接对偏离回归，再用两个系数算出“永续承担的调整份额”，结果是 \dXAUrawshare。这个份额应当在 0 到 100\% 之间，出现负值说明估计本身出了问题。原因是 4 小时里金价本身的涨跌远大于几个 bp 的偏离，永续系数的标准误达到 \dXAUrawseperp，估计几乎不含信息。改为相对第三个黄金价格（PAXG 代币）计算涨跌后，共同的金价波动相互抵消，标准误降到 \dXAUseperp，份额变为 \dXAUshareall。
 
-\textbf{对 Agent 的认识。}有两类活交给它比较靠得住：一是管道类工作，包括下载、对齐、缓存、画图；二是在我给出判据之后的大量重复检验。必须自己盯的是语义和边界：
-\begin{itemize}
-\item “自 08:00 起”到底包不包括 08:00 结算的那一期；
-\item 份额、半衰期这类派生量是否落在合理范围内；
-\item 任何“看起来显著”的结果到底集中在哪几个样本上。
-\end{itemize}
-它在第一类工作上很快；在第二类问题上会给出自洽、但错误的叙述。
+\key{体会三：哪些活可以交给 Agent。}下载、对齐、缓存、画图这类管道工作，以及给定判据之后的大量重复检验，交给它比较可靠，速度也快。必须自己盯的是语义和边界：“自 08:00 起”包不包括 08:00 结算的那一期；份额、半衰期这类派生量是否落在合理范围；看起来显著的结果集中在哪几个样本上。体会二就是一个例子，Agent 给出的叙述前后自洽，数字本身却不合理。
 \end{document}

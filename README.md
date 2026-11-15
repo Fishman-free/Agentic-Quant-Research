@@ -6,6 +6,25 @@ AGENTIC 多资产量化研究实习申请项目 · Zhuqi Ma
 - **题目**：[`screening_test_资金费能把黄金永续拉回现货吗.md`](screening_test_资金费能把黄金永续拉回现货吗.md)
 - **隐藏数据问题完整清单**：[`docs/DATA_ISSUES.md`](docs/DATA_ISSUES.md)
 
+## 阅读顺序
+
+**先读报告。** 报告按论文结构组织，每一节回答一个问题：
+
+| 报告章节 | 回答什么 | 对应代码 |
+|---|---|---|
+| 摘要、§1 引言、§2 相关工作 | 研究什么问题，分哪五步，和已有研究的关系 | — |
+| §3 数据与对齐 | 四个价格怎样放到同一个 UTC 时钟上；HistData 时间戳的换算规则及证据；题面没列出的数据问题 | `io_raw.py` → `clock.py` → `panel.py` → `dataqa.py` |
+| §4 资金费机制复现 | 资金费公式和死区；参数怎样随时间变化；逐期重算与官方值比对 | `funding_params.py` → `funding.py` |
+| §5 预测模型 | 未来 4 小时基差变化的预测；特征为什么这样设计；比基线好多少，是不是运气 | `features.py` → `models.py` → `evaluate.py` |
+| §6 回归机制 | 偏离多久回来；是永续在动还是现货在动；资金费什么时候在拉 | `dynamics.py` |
+| §7 深挖休市 | 现货休市时资金费和永续价格发生了什么 | `calendar.py` → `closure.py` |
+| §8 结论 | 把前面的结果合起来回答研究问题 | — |
+| 附录 A / B / C | 下一步研究方向 / 核对数字 / AI 使用说明 | `report_numbers.py` |
+
+**再看代码。** 入口是 [`run_all.py`](run_all.py)，它按上表的顺序调用各模块，每一步打印一行进度。所有代码在 `src/aqr/` 下，每个文件开头的说明写了它做什么、为什么这样做。图在 `figures.py`，报告里的每个数字由 `report_numbers.py` 写成 LaTeX 宏。
+
+**最后看验证。** `tests/` 是自动测试（时钟、资金费边界期、防前视等），`scripts/verify_check_numbers.py` 不经过分析代码、直接读原始文件复核附录 B 的数字。
+
 ## 一条命令复现
 
 ```bash
@@ -49,11 +68,11 @@ data/
 | `src/aqr/io_raw.py` | 读原始 zip，统一用"UTC 分钟结束时刻"作索引（现货时间戳为微秒、期货为毫秒）；HistData 同一分钟多行按题面规则合并 |
 | `src/aqr/clock.py` | HistData → UTC：逐日偏移扫描与日休作息，两条独立证据 |
 | `src/aqr/calendar.py` | 事先可知的外汇黄金交易日历，供特征使用，不看实际数据缺口 |
-| `src/aqr/panel.py` | 一分钟面板；基差拆成溢价腿（永续−指数）与指数腿（指数−现货） |
+| `src/aqr/panel.py` | 一分钟面板；基差拆成溢价（永续−指数）与指数差（指数−现货） |
 | `src/aqr/funding_params.py` | **时变资金费参数表**（利息项、上下限，按结算期分段生效，每段附证据） |
 | `src/aqr/funding.py` | 逐期复现、$\bar P$ 近似方法对比、误差包络、不匹配期的归因 |
 | `src/aqr/features.py` · `models.py` · `evaluate.py` | 样本与特征、基线 / Ridge / 梯度提升树、滚动交叉验证选型、DM / Clark–West / 块自助法 |
-| `src/aqr/dynamics.py` | 半衰期、工具变量去噪、局部投影、两腿分解（相对第三市场）、结算事件研究 |
+| `src/aqr/dynamics.py` | 半衰期、工具变量去噪、局部投影、永续与现货谁在动（相对第三市场）、结算事件研究 |
 | `src/aqr/closure.py` | 深挖角度：现货休市与 05-08 指数规则变更的自然实验、开盘缺口的预测 |
 | `src/aqr/dataqa.py` | 隐藏数据问题：检测、证据、处理方式，以及对结论数字的影响 |
 | `src/aqr/figures.py` · `report_numbers.py` | 图（配色经色盲安全校验）、LaTeX 宏与表格 |

@@ -110,7 +110,7 @@ def reopen_profile(ep: pd.DataFrame, kind="周末/假日", horizon=240) -> pd.Da
 
 
 def closure_path(ep: pd.DataFrame, kind="周末/假日") -> dict:
-    """一个代表性周末：指数、永续、溢价腿的分钟路径（画图用），05-08 前后各取一个波动最大的。"""
+    """一个代表性周末：指数、永续、溢价的分钟路径（画图用），05-08 前后各取一个波动最大的。"""
     px = panel.minute_panel("XAUUSDT")
     res = {}
     for post, g in ep[ep["kind"] == kind].groupby("post58"):

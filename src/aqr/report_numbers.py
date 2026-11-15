@@ -144,58 +144,49 @@ def repro_table(res):
     _tex_table(C.GEN / "tab_repro.tex", ["", "口径", "$>$0.1bp", "最大误差", "RMSE", "包络内"], rows, "llrrrr")
 
 
-def ablation_table(res):
-    """每组特征为什么放进去：交叉验证 RMSE 上"从全模型剔除这一组的损失"与"只把这一组加到基线变量上的增益"。"""
-    rows = []
+# 每组特征怎么算、为什么放进去（正文表 4 的文字列；数字列来自交叉验证消融）
+FEATURE_DOC = {
+    "偏离": ("基差减过去 1、4、24、72 小时均值", "基线的来源；区分新偏离和旧偏离"),
+    "噪声": ("基差减 15 分钟均值；成交价减盘口价", "瞬间的报价误差几分钟内就消失"),
+    "溢价与指数差": ("两部分各自相对 24 小时均值的偏离", "资金费只作用于溢价"),
+    "资金费": ("本期估计值、上期官方值、距结算时间、死区外×偏离", "结算前后推动溢价；死区外才随溢价变"),
+    "动量": ("永续、现货各自 15 分钟和 1 小时涨跌", "区分偏离由哪一边造成"),
+    "波动与流动性": ("基差波动及其×偏离、主动买入占比、零成交占比", "成交稀少时是旧报价，偏离不可信"),
+    "休市日历": ("距收盘、距开盘时间，窗口内休市占比及其×偏离", "跨越休市时现货不动；按公开规则写成"),
+}
+
+
+def features_table(res):
+    """特征组说明表：怎么算、为什么放、交叉验证上去掉这一组后 RMSE 变差多少。"""
     a = {sym: res["models"][sym]["ablation"].set_index("组") for sym in SYMS}
-    for g in a[SYMS[0]].index:
-        rows.append([g] + [f(a[sym].loc[g, c], 3, True) for sym in SYMS for c in ("剔除损失", "相对基线增益")])
-    hdr = ["特征组", "XAU 剔除", "XAU 单加", "PAXG 剔除", "PAXG 单加"]
-    _tex_table(C.GEN / "tab_ablation.tex", hdr, rows, "lrrrr")
-
-
-def compare_table(res):
-    """两个对照案例并排：把散在各节的关键数字收成一张表。"""
-    d, mo, fz = res["dyn"], res["eval"], res["funding"]
-    ev = {s: d[s]["event"] for s in SYMS}
-    jump = {"XAUUSDT": ev["XAUUSDT"].loc[5, "F>利息项"] - ev["XAUUSDT"].loc[0, "F>利息项"],
-            "PAXGUSDT": ev["PAXGUSDT"].abs().max().max()}
-    r = lambda fn: [fn(s) for s in SYMS]
-    rows = [
-        ["锚定的现货", "HistData 真实金价（会休市）", "Binance PAXG 代币（24h）"],
-        ["基线 $\\beta$ / 半衰期", *r(lambda s: f"{f(d[s]['beta_train'])} / {f(d[s]['hl_beta'], 1)}h")],
-        ["去噪（IV）半衰期", *r(lambda s: f"{f(d[s]['hl_iv'], 1)}h")],
-        ["新偏离 4h 回吐 / 旧偏离半衰期", *r(lambda s: f"{pct(-d[s]['model_response']['fresh'], 0)} / {f(d[s]['model_response']['hl_old'], 1)}h")],
-        ["4h 回归中永续承担的份额", *r(lambda s: pct(d[s]['legs']['全样本']['share_perp'], 0))],
-        ["回归发生在溢价腿的份额", *r(lambda s: pct(d[s]['prem_index_legs']['prem'] / (d[s]['prem_index_legs']['prem'] + d[s]['prem_index_legs']['idx']), 0))],
-        ["$\\overline{P}$ 中位数 / 死区内期数", *r(lambda s: f"{f(d[s]['pdist']['P_median'], 2)}bp / {pct(d[s]['pdist']['share_dead'], 0)}")],
-        ["每期官方资金费均值", *r(lambda s: f"{f(fz[s]['main']['official'].mean() * 1e4, 2)}bp")],
-        ["结算后 5 分钟溢价弹回", *r(lambda s: f"{f(jump[s], 2)}bp")],
-        ["测试期 RMSE：基线→模型", *r(lambda s: f"{f(mo[s]['table'].loc['base', '全期'])}→{f(mo[s]['table'].loc['model', '全期'])}（−{pct(mo[s]['sig']['gain_pct'])}）")],
-        ["资金费复现最大误差", *r(lambda s: f"{f(fz[s]['summary']['max_abs'])}bp")],
-    ]
-    _tex_table(C.GEN / "tab_compare.tex", ["", "XAU 永续", "PAXG 永续"], rows, "lll")
+    rows = [[g, *FEATURE_DOC[g], *(f(a[sym].loc[g, "剔除损失"], 3, True) for sym in SYMS)]
+            for g in a[SYMS[0]].index]
+    cols = "".join(">{\\raggedright\\arraybackslash}p{%s}" % w for w in ("2.0cm", "6.2cm", "5.6cm")) + "rr"
+    _tex_table(C.GEN / "tab_features.tex", ["特征组", "怎么算", "为什么放进去", "XAU", "PAXG"], rows, cols)
 
 
 def issues_table(res, m: Macros):
     q = res["dataqa"]
     ck = q["clock"]
+    i5, dp, cm, us = q["idx0305"], q["dups"], q["close_minute"], q["usdt"]
+    t624 = q["funding_archive"]["XAUUSDT"]["test_0624"]
     rows = [
-        ["HistData 时钟 03-29 才切到 UTC−4", "图 1 两条独立证据",
-         "分段换算", f"恒 UTC−5：XAU 测试基线 RMSE {f(ck.iloc[1]['rmse_base'], 2)}（本文 {f(ck.iloc[0]['rmse_base'], 2)}）；按美国夏令时：{f(ck.iloc[2]['rmse_base'], 2)}"],
-        ["XAU 指数 03-05 04:40–05:54 停滞", f"指数−金价最大 {f(q['idx0305']['index_vs_spot_max_bp'], 1)}bp，永续−金价中位 {f(q['idx0305']['perp_vs_spot_med_bp'], 1)}bp",
-         "解释为指数异常，不改数据", f"该期官方 {f(q['idx0305']['official_bp'], 4)}bp 落在包络 [{f(q['idx0305']['env_lo'], 2)}, {f(q['idx0305']['env_hi'], 2)}] 外，是全样本唯一一期"],
-        ["HistData 同分钟多行实为两路报价交错", f"{q['dups']['n_minutes']} 分钟、{q['dups']['nonmono_rows']} 行时间倒序；同分钟收盘最大相差 {f(q['dups']['close_spread_bp_max'], 1)}bp",
-         "按题面规则合并", f"影响 {q['dups']['samples_touched']} 个样本；改用首行收盘，XAU 测试基线 RMSE {f(q['dups']['rule']['rmse_base'])}→{f(q['dups']['alt_first_close']['rmse_base'])}"],
-        ["日休前最后一分钟金价报价偏低", f"{q['close_minute']['n_breaks']} 次日休：收盘前一分钟基差 {f(q['close_minute']['basis_close_m1'], 2)}→最后一分钟 {f(q['close_minute']['basis_close'], 2)}bp",
-         "保留（规则要求），模型用距收盘特征吸收", f"{q['close_minute']['samples_on_close_minute']} 个样本的 t 或 t+4h 落在该分钟"],
-        ["07-16 换算实际在 08:33 生效", f"溢价指数在 08:33 跳 {f(q['usdt']['prem_jump_bp'], 1)}bp，此前冻结 {q['usdt']['prem_frozen_min']} 分钟",
-         "特征只用偏离、不用水平", f"指数腿均值 {f(q['usdt']['index_leg_before'], 2)}→{f(q['usdt']['index_leg_after'], 2)}bp"],
-        ["资金费 06-24 04:00 缺失≠未结算", f"下一期按 4h 窗口误差 {f(q['funding_archive']['XAUUSDT']['test_0624']['err_4h_bp'], 3)}bp，按 8h {f(q['funding_archive']['XAUUSDT']['test_0624']['err_8h_bp'], 3)}bp",
-         "剔除该期，不改下一期窗口", f"若误当成未结算、按 8h 窗口算 08:00 期，误差 {f(q['funding_archive']['XAUUSDT']['test_0624']['err_8h_bp'], 2)}bp"],
+        ["HistData 时钟 03-29 才切到 UTC−4", "图 1 的两条独立证据",
+         f"分段换算。若恒按 UTC−5，XAU 测试期基线 RMSE 从 {f(ck.iloc[0]['rmse_base'], 2)} 变成 {f(ck.iloc[1]['rmse_base'], 2)}；"
+         f"按美国夏令时为 {f(ck.iloc[2]['rmse_base'], 2)}"],
+        ["XAU 参考指数 03-05 04:40–05:54 停滞", f"指数比金价最多高 {f(i5['index_vs_spot_max_bp'], 1)}bp，永续与金价之差中位数只有 {f(i5['perp_vs_spot_med_bp'], 1)}bp",
+         f"不改数据。该期官方值 {f(i5['official_bp'], 4)}bp 落在误差范围 [{f(i5['env_lo'], 2)}, {f(i5['env_hi'], 2)}] 外，是唯一的一期"],
+        ["HistData 同一分钟多行是两路报价交错", f"{dp['n_minutes']} 个分钟里 {dp['nonmono_rows']} 行时间倒序，同分钟收盘最多差 {f(dp['close_spread_bp_max'], 1)}bp",
+         f"按题面规则合并。影响 {dp['samples_touched']} 个样本；改用首行收盘，XAU 基线 RMSE {f(dp['rule']['rmse_base'])}→{f(dp['alt_first_close']['rmse_base'])}"],
+        ["每日停盘前最后一分钟金价偏低", f"{cm['n_breaks']} 次停盘平均：倒数第二分钟基差 {f(cm['basis_close_m1'], 2)}bp，最后一分钟 {f(cm['basis_close'], 2)}bp",
+         f"按规则保留，用距收盘特征吸收。{cm['samples_on_close_minute']} 个样本的 $t$ 或 $t$+4h 落在这一分钟"],
+        ["07-16 换算实际在 08:33 生效", f"溢价指数在 08:33 跳 {f(us['prem_jump_bp'], 1)}bp，此前冻结 {us['prem_frozen_min']} 分钟",
+         f"特征只用偏离，不用水平。指数差均值 {f(us['index_leg_before'], 2)}→{f(us['index_leg_after'], 2)}bp"],
+        ["资金费 06-24 04:00 缺失，但实际已结算", f"下一期按 4h 窗口算误差 {f(t624['err_4h_bp'], 3)}bp，按 8h 算 {f(t624['err_8h_bp'], 3)}bp",
+         f"剔除该期，下一期仍用 4h 窗口；误当成未结算会多出 {f(t624['err_8h_bp'], 2)}bp 误差"],
     ]
-    _tex_table(C.GEN / "tab_issues.tex", ["问题", "数据证据", "处理", "对数字的影响"], rows,
-               "".join(">{\\raggedright\\arraybackslash}p{%s}" % w for w in ("2.9cm", "5.2cm", "2.6cm", "5.4cm")))
+    _tex_table(C.GEN / "tab_issues.tex", ["问题", "数据证据", "处理与影响"], rows,
+               "".join(">{\\raggedright\\arraybackslash}p{%s}" % w for w in ("4.3cm", "5.5cm", "6.9cm")))
 
 
 # ------------------------------------------------------------------ 宏
@@ -376,7 +367,7 @@ def data_issues_md(res):
               "交易所结算时显然没有使用归档里的这段溢价。", ""]
     u = q["usdt"]
     lines += ["## 7. 07-16 USDT/USD 换算实际生效于 08:33", f"溢价指数 08:33 跳变 {u['prem_jump_bp']:.2f}bp，之前冻结 {u['prem_frozen_min']} 分钟；"
-              f"指数腿（指数−金价）均值 {u['index_leg_before']:.2f}→{u['index_leg_after']:.2f}bp。", ""]
+              f"指数差（指数−金价）均值 {u['index_leg_before']:.2f}→{u['index_leg_after']:.2f}bp。", ""]
     fa = q["funding_archive"]
     lines += ["## 8. 资金费归档", f"两合约均缺 06-24 04:00；下一期 4h/8h 窗口误差：XAU {fa['XAUUSDT']['test_0624']}，PAXG {fa['PAXGUSDT']['test_0624']} → 结算发生了，只是归档缺行。"
               f"利息项切换边界：若把 01-23 08:00 结算期也按 I=0 计算，误差 {fa['boundary_err_naive']:+.3f}bp。", ""]
@@ -405,8 +396,7 @@ def write_all(res):
     check_model(res, m)
     params_table()
     repro_table(res)
-    ablation_table(res)
-    compare_table(res)
+    features_table(res)
     issues_table(res, m)
     macros(res, m)
     m.write(C.GEN / "numbers.tex")

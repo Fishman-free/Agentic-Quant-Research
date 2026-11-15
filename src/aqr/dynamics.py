@@ -6,11 +6,11 @@
 2. 局部投影：h = 1..24 小时，y_h = 基差_{t+h} − 基差_t 对 dev_24h 回归，画衰减曲线。
 3. 噪声偏差：基差_t 同时出现在 y 和 dev 里，分钟噪声会机械地造出负 β。
    用 t−15 分钟的偏离作工具变量（噪声在 15 分钟内不相关），给出"去噪"β。
-4. 两腿分解：Δ永续、Δ现货（都相对第三个独立的黄金价格）分别对 dev 回归，β = α_永续 − α_现货；
+4. 谁在动：Δ永续、Δ现货（都相对第三个独立的黄金价格）分别对 dev 回归，β = α_永续 − α_现货；
    α_永续/β 是"永续向现货靠"的份额（类似 VECM 调整系数 / Gonzalo-Granger 权重）。
    直接用 4h 收益做会被共同金价波动淹没（标准误 ~0.6），所以必须扣掉参照市场。
-5. 资金费的作用：资金费只作用于溢价腿（永续−指数）。比较 P̄ 在死区内（F≡利息项，不随溢价变）
-   与死区外（F 随溢价线性变）时溢价腿的回归速度，并在相同偏离幅度分档里比较。
+5. 资金费的作用：资金费只作用于溢价（永续−指数）。比较 P̄ 在死区内（F≡利息项，不随溢价变）
+   与死区外（F 随溢价线性变）时溢价的回归速度，并在相同偏离幅度分档里比较。
    再做结算时刻 ±60 分钟的事件研究。
 """
 import numpy as np
@@ -77,7 +77,7 @@ def leg_shares(d, mask, dev="dev_24h"):
 
 
 def leg_shares_iv(d, mask):
-    """两腿各自对 dev 的 IV 回归（工具 = t−15 分钟的偏离），排除"现货报价噪声"造成的机械回归。"""
+    """永续、现货各自对 dev 的 IV 回归（工具 = t−15 分钟的偏离），排除"现货报价噪声"造成的机械回归。"""
     x = d[d["sample"] & mask].dropna(subset=["r_perp_4h_fwd", "r_spot_4h_fwd", "dev_24h", "dev24_lag15"])
     z, xv = x["dev24_lag15"] - x["dev24_lag15"].mean(), x["dev_24h"] - x["dev_24h"].mean()
     ap = float((z * (x["r_perp_4h_fwd"] - x["r_perp_4h_fwd"].mean())).sum() / (z * xv).sum())
@@ -89,8 +89,8 @@ REFS = {"XAUUSDT": ("PAXGUSDT", "spot", "PAXG 代币"), "PAXGUSDT": ("XAUUSDT", 
 
 
 def leg_shares_rel(sym: str, d: pd.DataFrame, mask, iv: bool = False) -> dict:
-    """两腿分解（相对第三个市场）：r_腿 = Δ4h ln(腿/参照)。参照是另一个独立交易的黄金价格，
-    共同的金价波动被扣掉后，两腿各自的调整系数才估得准；且 α_永续 − α_现货 ≡ β（参照项抵消）。
+    """谁在动（相对第三个市场）：r = Δ4h ln(价格/参照)。参照是另一个独立交易的黄金价格，
+    共同的金价波动被扣掉后，永续、现货各自的调整系数才估得准；且 α_永续 − α_现货 ≡ β（参照项抵消）。
     iv=True 时用 t−15 分钟的偏离作工具，排除"现货报价噪声"造成的机械回归。"""
     osym, col, _ = REFS[sym]
     p, ref = panel.minute_panel(sym), panel.minute_panel(osym)[col]
@@ -112,7 +112,7 @@ def leg_shares_rel(sym: str, d: pd.DataFrame, mask, iv: bool = False) -> dict:
 
 def vecm(sym: str, step: int = 5, lags: int = 3, mask_fn=None) -> dict:
     """高频误差修正：Δln永续、Δln现货（bp/步）对上一时刻偏离 e = 基差 − 24h 均值 回归，控制 lags 阶滞后收益。
-    4h 收益里共同的金价波动（标准差 ~40bp）会把两腿的调整系数淹没；在 1–5 分钟频率上，共同波动小得多。
+    4h 收益里共同的金价波动（标准差 ~40bp）会把永续、现货各自的调整系数淹没；在 1–5 分钟频率上，共同波动小得多。
     返回 α_永续（<0 表示永续向现货靠）、α_现货（>0 表示现货向永续靠）与永续承担的调整份额。"""
     p = panel.minute_panel(sym)
     g = p.iloc[step - 1::step]
@@ -133,8 +133,8 @@ def vecm(sym: str, step: int = 5, lags: int = 3, mask_fn=None) -> dict:
 
 
 def prem_index_legs(sym: str, d: pd.DataFrame, mask=None) -> dict:
-    """基差 = 溢价腿（永续−指数）+ 指数腿（指数−现货）：4h 回归里各腿贡献多少。
-    资金费只作用于溢价腿；指数腿的回归与资金费无关。两腿都是价差，不含共同金价波动，估计很准。"""
+    """基差 = 溢价（永续−指数）+ 指数差（指数−现货）：4h 回归里各占多少。
+    资金费只作用于溢价；指数差的回归与资金费无关。两者都是价差，不含共同金价波动，估计很准。"""
     p = panel.minute_panel(sym)
     x = d[d["sample"]] if mask is None else d[d["sample"] & mask]
     t, t4 = x.index, x.index + C.H * HOUR
@@ -146,7 +146,7 @@ def prem_index_legs(sym: str, d: pd.DataFrame, mask=None) -> dict:
 
 
 def premium_leg_by_state(d, sym):
-    """溢价腿 4h 变化 vs 溢价腿偏离，按死区内/外、偏离幅度分档。"""
+    """溢价 4h 变化 vs 溢价偏离，按死区内/外、偏离幅度分档。"""
     x = d[d["sample"]].dropna(subset=["prem_leg_fut", "prem_leg_now", "prem_leg_dev"]).copy()
     x["dprem"] = x["prem_leg_fut"] - x["prem_leg_now"]
     x["absdev"] = x["prem_leg_dev"].abs()
@@ -235,8 +235,8 @@ def run(sym: str, model_res: dict = None) -> dict:
 
 def model_response(res) -> dict:
     """模型隐含的回归比例：两类冲击下预测的 4h 变化 / 冲击幅度（Ridge 系数，原始单位）。
-    "新偏离"：基差刚跳 1bp（各窗口偏离都 +1，噪声项 +1，溢价腿 +1）；
-    "旧偏离"：偏离已持续 4h 以上（dev_24h、dev_72h、溢价腿偏离 +1，短窗口偏离与噪声项 ≈0）。"""
+    "新偏离"：基差刚跳 1bp（各窗口偏离都 +1，噪声项 +1，溢价 +1）；
+    "旧偏离"：偏离已持续 4h 以上（dev_24h、dev_72h、溢价偏离 +1，短窗口偏离与噪声项 ≈0）。"""
     c = res["coef_raw"]
     g = lambda k: float(c.get(k, 0.0))
     fresh = sum(g(k) for k in ("dev_1h", "dev_4h", "dev_24h", "dev_72h", "noise_15m", "prem_leg_dev"))

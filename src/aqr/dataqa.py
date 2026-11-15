@@ -130,7 +130,7 @@ def index_anomaly_0305() -> dict:
 
 
 def usdt_switch() -> dict:
-    """07-16 换算：分钟级定位指数腿跳变时刻，并量化跳变幅度。"""
+    """07-16 换算：分钟级定位指数差跳变时刻，并量化跳变幅度。"""
     p = panel.minute_panel("XAUUSDT")
     w = p.loc["2026-07-16 07:30":"2026-07-16 10:00"]
     pre = 1e4 * w["prem_close"]
