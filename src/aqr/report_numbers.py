@@ -208,6 +208,9 @@ def macros(res, m: Macros):
         tab, sig = res["eval"][sym]["table"], res["eval"][sym]["sig"]
         for col, nm in (("zero", "zero"), ("base", "base"), ("model", "model"), ("hgb", "hgb")):
             m[f"m{t}{nm}"] = f(tab.loc[col, "全期"])
+        ml = res["mlp"][sym]
+        m[f"m{t}mlp"], m[f"m{t}mlpsd"] = f(ml["test_mean"]), f(ml["test_sd"])
+        m[f"m{t}mlphidden"] = str(ml["hidden"][0])
         m[f"m{t}gain"], m[f"m{t}gainpct"] = f(sig["gain"]), pct(sig["gain_pct"])
         m[f"m{t}dm"], m[f"m{t}dmp"] = f(sig["dm24"][0], 2), f(sig["dm24"][1], 4)
         m[f"m{t}dmfour"], m[f"m{t}dmfourp"] = f(sig["dm4"][0], 2), f(sig["dm4"][1], 3)
@@ -384,8 +387,11 @@ def data_issues_md(res):
 
 
 def summary_json(res):
+    # mlp 只留正文用到的三项，供 run_all.py --no-mlp 复用上次结果
     out = {sym: {"funding": res["funding"][sym]["summary"], "rmse": res["eval"][sym]["table"].to_dict(),
-                 "alpha_beta": res["models"][sym]["ab"], "sig": res["eval"][sym]["sig"]} for sym in SYMS}
+                 "alpha_beta": res["models"][sym]["ab"], "sig": res["eval"][sym]["sig"],
+                 "mlp": {"test_mean": res["mlp"][sym]["test_mean"], "test_sd": res["mlp"][sym]["test_sd"],
+                         "hidden": list(res["mlp"][sym]["hidden"])}} for sym in SYMS}
     (C.OUT / "summary.json").write_text(json.dumps(out, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
 
 

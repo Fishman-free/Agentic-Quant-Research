@@ -15,7 +15,7 @@ AGENTIC 多资产量化研究实习申请项目 · Zhuqi Ma
 | 摘要、§1 引言、§2 相关工作 | 研究什么问题，分哪五步，和已有研究的关系 | — |
 | §3 数据与对齐 | 四个价格怎样放到同一个 UTC 时钟上；HistData 时间戳的换算规则及证据；题面没列出的数据问题 | `io_raw.py` → `clock.py` → `panel.py` → `dataqa.py` |
 | §4 资金费机制复现 | 资金费公式和死区；参数怎样随时间变化；逐期重算与官方值比对 | `funding_params.py` → `funding.py` |
-| §5 预测模型 | 未来 4 小时基差变化的预测；特征为什么这样设计；比基线好多少，是不是运气 | `features.py` → `models.py` → `evaluate.py` |
+| §5 预测模型 | 未来 4 小时基差变化的预测；特征为什么这样设计；比基线好多少，是不是运气；神经网络为什么没有更好 | `features.py` → `models.py` → `mlp.py` → `evaluate.py` |
 | §6 回归机制 | 偏离多久回来；是永续在动还是现货在动；资金费什么时候在拉 | `dynamics.py` |
 | §7 深挖休市 | 现货休市时资金费和永续价格发生了什么 | `calendar.py` → `closure.py` |
 | §8 结论 | 把前面的结果合起来回答研究问题 | — |
@@ -30,11 +30,12 @@ AGENTIC 多资产量化研究实习申请项目 · Zhuqi Ma
 ```bash
 pip install -r requirements.txt
 python scripts/download_datasets.py   # 约 80 MB，幂等；自动补拉月度归档缺失的整天
-python run_all.py                     # 原始 zip → 全部数字、表格、图 → report/main.pdf（约 2 分钟）
+python run_all.py                     # 原始 zip → 全部数字、表格、图 → report/main.pdf（约 6 分钟，其中神经网络对照约 5 分钟）
 ```
 
 - `python run_all.py --rebuild`：删掉 `cache/`，从原始 zip 重建（缓存只用来加速）
 - `python run_all.py --no-pdf`：只算数字和图，不调用 xelatex
+- `python run_all.py --no-mlp`：跳过神经网络对照，沿用 `outputs/summary.json` 里上次的结果（约 1 分钟，PDF 与完整运行一致）
 - `python -m pytest -q`：23 项测试，覆盖时钟、合并规则、资金费边界期与上限期、截断不变性（防前视），还有一个故意偷看未来的特征，测试必须能抓到它
 - `python scripts/verify_check_numbers.py`：只用标准库直接读原始 zip，独立复核"核对数字"附录
 
@@ -71,7 +72,7 @@ data/
 | `src/aqr/panel.py` | 一分钟面板；基差拆成溢价（永续−指数）与指数差（指数−现货） |
 | `src/aqr/funding_params.py` | **时变资金费参数表**（利息项、上下限，按结算期分段生效，每段附证据） |
 | `src/aqr/funding.py` | 逐期复现、$\bar P$ 近似方法对比、误差包络、不匹配期的归因 |
-| `src/aqr/features.py` · `models.py` · `evaluate.py` | 样本与特征、基线 / Ridge / 梯度提升树、滚动交叉验证选型、DM / Clark–West / 块自助法 |
+| `src/aqr/features.py` · `models.py` · `mlp.py` · `evaluate.py` | 样本与特征、基线 / Ridge / 梯度提升树 / 神经网络对照、滚动交叉验证选型、DM / Clark–West / 块自助法 |
 | `src/aqr/dynamics.py` | 半衰期、工具变量去噪、局部投影、永续与现货谁在动（相对第三市场）、结算事件研究 |
 | `src/aqr/closure.py` | 深挖角度：现货休市与 05-08 指数规则变更的自然实验、开盘缺口的预测 |
 | `src/aqr/dataqa.py` | 隐藏数据问题：检测、证据、处理方式，以及对结论数字的影响 |

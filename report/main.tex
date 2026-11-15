@@ -133,7 +133,7 @@ Clark–West 统计量 & \mXAUcw & \mPAXGcw \\
 \bottomrule
 \end{tabular}\end{minipage}
 \end{table}
-表 \ref{tab:rmse} 是测试期 RMSE，模型在两个合约、三个月份上都优于基线。判断这个差别是不是运气，我们做了三项检验（表 \ref{tab:sig}）。\key{DM 检验}逐个样本比较两个预测的平方误差，看差值的均值是否显著大于 0；相邻整点的 4 小时目标互相重叠，标准误按 24 阶滞后校正。模型包含基线的变量，属于嵌套比较，所以另做 \key{Clark–West 检验}。\key{分块重抽样}把测试期按 24 小时切块，有放回地重抽 2000 次，RMSE 改善的 95\% 区间在两个合约上都不含 0。XAU 的改善较为集中，损失差最大的 1\% 样本贡献了 \mXAUtopshare，它们多是预测窗口跨越每日停盘的样本，正是休市日历特征针对的情形；去掉这些样本后改善仍有 \mXAUtrim\bp。PAXG 的现货 24 小时交易，基线相对零预测已降低 \mPAXGbasegain（XAU 为 \mXAUbasegain），剩下可预测的部分较少。作为对照，梯度提升树的 RMSE 为 \mXAUhgb（XAU）和 \mPAXGhgb（PAXG）。
+表 \ref{tab:rmse} 是测试期 RMSE，模型在两个合约、三个月份上都优于基线。判断这个差别是不是运气，我们做了三项检验（表 \ref{tab:sig}）。\key{DM 检验}逐个样本比较两个预测的平方误差，看差值的均值是否显著大于 0；相邻整点的 4 小时目标互相重叠，标准误按 24 阶滞后校正。模型包含基线的变量，属于嵌套比较，所以另做 \key{Clark–West 检验}。\key{分块重抽样}把测试期按 24 小时切块，有放回地重抽 2000 次，RMSE 改善的 95\% 区间在两个合约上都不含 0。XAU 的改善较为集中，损失差最大的 1\% 样本贡献了 \mXAUtopshare，它们多是预测窗口跨越每日停盘的样本，正是休市日历特征针对的情形；去掉这些样本后改善仍有 \mXAUtrim\bp。PAXG 的现货 24 小时交易，基线相对零预测已降低 \mPAXGbasegain（XAU 为 \mXAUbasegain），剩下可预测的部分较少。作为对照，梯度提升树的 RMSE 为 \mXAUhgb（XAU）和 \mPAXGhgb（PAXG）；神经网络（同特征、同样的四折交叉验证选型，5 个随机种子重训）为 \mXAUmlp（XAU）和 \mPAXGmlp（PAXG），都不如 Ridge，单次训练并不优于基线。交叉验证选出的网络都很小（\mXAUmlphidden、\mPAXGmlphidden 个隐藏单元），样本量撑不起更大容量。
 
 \section{回归机制：多快、谁在动、资金费何时起作用}
 \subsection{偏离多久回来}
