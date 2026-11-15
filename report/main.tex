@@ -74,9 +74,9 @@ HistData 的换算规则需要用数据证明，这里有两条互相独立的�
 \textbf{$\Pbar$ 的构造}：Binance 每 5 秒采一个溢价样本，按样本序号 1,2,…,$n$ 线性加权平均。一分钟溢价 K 线给出每分钟 $\le$12 个样本的 OHLC 和样本数 \texttt{count}，据此构造：每分钟取 $(O+H+L+C)/4$，权重取这一分钟内样本序号之和（按 \texttt{count} 累计，空分钟权重为 0）。
 把每分钟的值分别换成最低价和最高价，就得到 $\Pbar$ 可能的上下界，再代入公式，得到每一期 $F$ 的\key{误差包络}。
 \begin{table}[H]\centering\small
-\begin{minipage}[t]{0.46\linewidth}\centering
+\begin{minipage}[t]{0.46\linewidth}\centering\setlength{\tabcolsep}{3.4pt}
 \caption{资金费参数时间表（$N$ 以各期字段为准）}\label{tab:params}\input{generated/tab_params.tex}\end{minipage}\hfill
-\begin{minipage}[t]{0.52\linewidth}\centering
+\begin{minipage}[t]{0.52\linewidth}\centering\setlength{\tabcolsep}{3.4pt}
 \caption{逐期复现（每合约 \repXAUn 期，误差单位 bp）}\label{tab:repro}\input{generated/tab_repro.tex}\end{minipage}
 \end{table}
 \vspace{-2pt}
@@ -97,17 +97,17 @@ HistData 的换算规则需要用数据证明，这里有两条互相独立的�
 \item \key{资金费}：本期截至 $t$ 的预估资金费（按当期参数计算）、严格早于 $t$ 的上一期官方值、距下一次结算的时间，以及“死区外×偏离”。
 \item \key{休市日历}：距收盘和距开盘的时间、预测窗口内的休市占比，以及“休市占比×偏离”。日历按事先公开的规则写成，不用 HistData 的实际缺口。
 \end{itemize}
-另外两组是动量和波动/流动性。题面事先告知 07-16 起基差中含 USDT/USD 偏离，所以特征只用偏离，不用基差和指数腿的绝对水平。这条规则在看测试集之前就定下了。
+另外两组：\key{动量}（两腿各自 15 分钟、1 小时收益）看偏离由哪一腿造成；\key{波动与流动性}（基差波动、主动买入占比、零成交占比）看偏离是否可信，成交稀少时多是陈旧报价。参考指数、溢价指数、资金费三类数据都用了：资金费只作用于溢价腿，拆开两腿才能看出它在不在拉。题面事先告知 07-16 起基差中含 USDT/USD 偏离，所以特征只用偏离，不用基差和指数腿的绝对水平。这条规则在看测试集之前就定下了。
 \textbf{选型（只用训练期）}：采用滚动起点交叉验证，3、4、5、6 月依次作验证月，每一折只用 $t+4\text{h}\le$ 该月月初的样本训练。在交叉验证上选 Ridge 的正则化强度，并按特征组做向后剔除。
 结果：XAU 保留全部 7 组（交叉验证 RMSE \mXAUcv，基线为 \mXAUcvbase）；PAXG 保留\mPAXGgroups 四组。选定后用全部训练样本重估。
 表 \ref{tab:abl} 说明了每组特征的作用。对 XAU，剔除损失最大的是偏离、休市日历、资金费和两腿四组，与它锚定的现货会休市、溢价会累积成资金费相符。对 PAXG，贡献集中在偏离和波动/流动性两组，与它资金费长期贴近零的状态一致。
 \begin{table}[!t]\centering\small
 \begin{minipage}[t]{0.47\linewidth}\centering
 \caption{测试期 RMSE（bp；按 $t$ 所在月份归属）}\label{tab:rmse}\input{generated/tab_rmse.tex}\end{minipage}\hfill
-\begin{minipage}[t]{0.51\linewidth}\centering
+\begin{minipage}[t]{0.51\linewidth}\centering\setlength{\tabcolsep}{2.5pt}
 \caption{特征组的作用（交叉验证 RMSE，bp）。剔除：从全模型去掉该组后变差多少；单加：基线变量＋该组比基线好多少}\label{tab:abl}\input{generated/tab_ablation.tex}\end{minipage}
 \end{table}
-\textbf{是真的还是运气？}
+\par\textbf{是真的还是运气？}
 \begin{itemize}
 \item XAU：RMSE 改善 \mXAUgain\bp（\mXAUgainpct）。DM 检验的 HAC 滞后取 24（4 小时目标存在重叠），统计量 \mXAUdm（$p$=\mXAUdmp）；滞后取 4 时为 \mXAUdmfour。由于模型嵌套了基线，另做 Clark–West 检验，统计量 \mXAUcw。按天分块自助法给出 RMSE 差的 95\% 区间 [\mXAUbootlo, \mXAUboothi]；7、8、9 月逐月都有改善，最小 \mXAUmingain\bp。优势最集中的是窗口跨越日休的 21:00 样本，损失差最大的 1\% 样本贡献了 \mXAUtopshare 的改善，这正是休市日历特征针对的场景；剔除这些样本后改善仍有 \mXAUtrim\bp。
 \item PAXG：改善 \mPAXGgain\bp（\mPAXGgainpct）。DM $p$=\mPAXGdmp，Clark–West 统计量 \mPAXGcw，自助区间 [\mPAXGbootlo, \mPAXGboothi] 不含 0。PAXG 的锚 24 小时都在，基线相对零预测已降低 \mPAXGbasegain（XAU 为 \mXAUbasegain），可预测的部分大多已被均值回归吸收，模型在此基础上又稳定地多拿到一截。
@@ -161,7 +161,7 @@ HistData 的换算规则需要用数据证明，这里有两条互相独立的�
 \end{itemize}
 \textbf{拉得多快}：基差回归的半衰期约 3–5 小时，主力是现货追上永续；资金费的作用体现在结算时点的溢价锯齿上。\textbf{什么时候拉不动}：一是溢价在死区内；二是现货休市，05-08 之前拉向冻结的旧价，之后资金费恒为 0；三是指数与现货之间存在错位。
 两个合约的差别也来自这里：PAXG 的锚 24 小时都在，回归更快、更彻底（局部投影 \dPAXGlpend），均值回归基线已经抓住了大部分可预测性。表 \ref{tab:cmp} 把两个合约的关键数字放在一起。
-\begin{table}[H]\centering\small
+\begin{table}[H]\centering\footnotesize\renewcommand{\arraystretch}{1.0}
 \caption{两个对照案例：同一套资金费公式，锚定不同的现货}\label{tab:cmp}\input{generated/tab_compare.tex}
 \end{table}
 
@@ -171,10 +171,10 @@ HistData 的换算规则需要用数据证明，这里有两条互相独立的�
 \section{下一步：周末黄金“影子价格”能否用来对冲开盘跳空}
 \textbf{方向与价值。}把周末仍在交易的黄金价格（XAU 永续、PAXG 代币与永续）合成一个“影子价格”，用来估计周日开盘时的金价，并用它对冲持有到周末的黄金敞口。
 本项目中 05-08 之后的 \clWkPostn 个周末里，永续涨跌解释了开盘缺口方差的 \clWkPostrsq，把缺口的标准差从 \clWkPostsd\bp 降到 \clWkPostresid\bp（方差降低 \clVarCut）。
-以 1000 万美元的周末黄金敞口为例，95\% 单边跳空损失从约 \clVaRun\bp 降到 \clVaRhe\bp，即每个周末少承担约 \clVaRsave 万美元的尾部风险。
+以 1000 万美元的周末黄金敞口为例，按正态近似（1.645 倍标准差），95\% 单边跳空损失从约 \clVaRun\bp 降到 \clVaRhe\bp，即每个周末少承担约 \clVaRsave 万美元的尾部风险。
 主要成本有三项：
 \begin{itemize}
-\item 手续费：永续往返一次，taker 约 10\bp、maker 约 4\bp，即每个周末 0.4–1 万美元；
+\item 手续费：假设 Binance U 本位合约普通用户费率（taker 0.05\%、maker 0.02\%/边）、不计滑点，永续往返一次 taker 约 10\bp、maker 约 4\bp，即每个周末 0.4–1 万美元；
 \item 资金费：05-08 之后周末资金费恒为 0（\clNpostClosed/\clNpostClosed 期），不构成成本；
 \item 基差风险：开盘后永续相对现货的基差，开盘时平均 \clReopenPost\bp。
 \end{itemize}
@@ -182,7 +182,7 @@ HistData 的换算规则需要用数据证明，这里有两条互相独立的�
 
 \textbf{支撑它的数字。}斜率 \clWkPostslope（95\% 区间 [\clWkPostlo, \clWkPosthi]，包含 1），方向命中率 \clWkPosthit；PAXG 代币同样有效（$R^2$=\clWkPostPaxgrsq）。05-08 之前指数冻结时斜率是 \clWkPreslope，说明这个关系依赖于指数规则。
 
-\textbf{第一个实验（一周内可完成）。}XAU 永续 2025-12 上市，本项目覆盖 21 个周末；PAXG 代币从 2019 年起在 Binance 交易，与 HistData 拼接可把样本扩到约 300 个周末。
+\textbf{第一个实验（一周内可完成）。}XAU 永续 2025-12 才上市，新指数规则下的周末只有 \clWkPostn 个；PAXG 代币 2020-08 起在 Binance 现货交易，与 HistData 拼接可把样本扩到约 300 个周末。
 \begin{enumerate}
 \item 用滚动窗口估计对冲比率，做严格的样本外检验；
 \item 按年份检验斜率是否稳定；
@@ -198,7 +198,6 @@ HistData 的换算规则需要用数据证明，这里有两条互相独立的�
 \item PAXG 资金费套利（卖永续、持代币）：年化约 \fzPAXGFann，与美元无风险利率相当，而市场恰好把溢价压在资金费约为 0 的位置，说明套利空间已被吃掉。
 \end{itemize}
 
-\clearpage
 \clearpage
 \section{核对数字}
 {\small
@@ -222,7 +221,6 @@ HistData 的换算规则需要用数据证明，这里有两条互相独立的�
 \input{generated/tab_rmse.tex}
 }
 
-\clearpage
 \clearpage
 \section{AI 使用说明}
 \textbf{工具与分工。}
