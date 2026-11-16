@@ -94,6 +94,7 @@ def check_funding(res, m: Macros):
 
 
 def check_model(res, m: Macros):
+    # 预测模型测试期 RMSE（零 / 基线 / 我的模型 × 全期 / 7 / 8 / 9 月）
     rows = []
     for sym in SYMS:
         r, tab = res["models"][sym], res["eval"][sym]["table"]
@@ -103,15 +104,24 @@ def check_model(res, m: Macros):
         if sym == SYMS[0]:
             rows.append("mid")
     _tex_table(C.GEN / "tab_rmse.tex", ["合约", "预测", "全期", "7 月", "8 月", "9 月"], rows, "llrrrr")
+
+    # 复现误差：每个合约的结算期数、最大绝对误差、误差超过 0.1 bp 的期数
+    rows = []
+    for sym in SYMS:
+        s = res["funding"][sym]["summary"]
+        rows.append([SN[sym], str(s["n"]), f(s["max_abs"]), str(s["n_gt_0.1"])])
+    _tex_table(C.GEN / "tab_check_repro.tex",
+               ["合约", "结算期数", "最大绝对误差 (bp)", "误差$>$0.1bp 期数"],
+               rows, "lrrr")
+
+    # 预测模型参数：训练 / 测试样本数、基线 α、β
     rows = []
     for sym in SYMS:
         r = res["models"][sym]
-        s = res["funding"][sym]["summary"]
-        rows.append([SN[sym], str(len(r["train"])), str(len(r["test"])), f(r["ab"][0]), f(r["ab"][1]),
-                     str(s["n"]), f(s["max_abs"]), str(s["n_gt_0.1"])])
+        rows.append([SN[sym], str(len(r["train"])), str(len(r["test"])), f(r["ab"][0]), f(r["ab"][1])])
     _tex_table(C.GEN / "tab_check_model.tex",
-               ["合约", "训练样本", "测试样本", "基线 $\\alpha$", "基线 $\\beta$", "结算期数", "最大绝对误差 (bp)", "误差$>$0.1bp 期数"],
-               rows, "lrrrrrrr")
+               ["合约", "训练样本", "测试样本", "基线 $\\alpha$", "基线 $\\beta$"],
+               rows, "lrrrr")
 
 
 # ------------------------------------------------------------------ 正文表格

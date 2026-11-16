@@ -3,6 +3,7 @@
 \documentclass[UTF8,zihao=5,a4paper]{ctexart}
 \usepackage[a4paper,left=1.55cm,right=1.55cm,top=1.35cm,bottom=1.35cm,footskip=0.55cm]{geometry}
 \usepackage{amsmath,amssymb,booktabs,tabularx,graphicx,xcolor,hyperref,enumitem,multicol}
+\usepackage{float}
 \usepackage{fontspec}
 
 \definecolor{accent}{RGB}{20,50,110}
@@ -319,40 +320,51 @@ $$\text{开盘跳空} = \clWkPosticpt + \clWkPostslope \times \text{永续周末
 }
 
 \clearpage
-{\linespread{1.45}\selectfont
-\setlength{\parskip}{6pt plus 1pt minus 1pt}
+{\linespread{1.08}\selectfont
+\setlength{\parskip}{3pt plus 0.6pt minus 0.5pt}
 \section{核对数字}
 本节汇总题面全部核对要求与全流程关键指标，确保实证结果可复现且数值精确可溯。
 
-\key{1. 两个指定时刻的价格数据（表 \ref{tab:check_prices}）}
-\begin{table}[htb]\centering\normalsize
-\renewcommand{\arraystretch}{2.15}
-\caption{指定时间点基础行情与基差核对}\label{tab:check_prices}
+\key{1. 两个指定时刻的基差（表 \ref{tab:check_prices}）}
+\begin{table}[H]\centering\normalsize
+\renewcommand{\arraystretch}{1.32}
+\caption{指定时间点收盘价与基差核对}\label{tab:check_prices}
 \input{generated/tab_check_prices.tex}
 \end{table}
 
-\key{2. 真实金价时钟映射规则}
+\key{2. 时钟：HistData 时间戳换算 UTC 规则}
 HistData 数据以欧洲夏令时为基准切换：
-\begin{itemize}[leftmargin=1.5em,itemsep=5pt]
+\begin{itemize}[leftmargin=1.5em,itemsep=3pt]
 \item 2026-01-01 至 2026-03-27：时间戳平移 $+300$ 分钟对齐 UTC，原始记录为分钟起点；
 \item 2026-03-30 至 2026-10-01：时间戳平移 $+240$ 分钟对齐 UTC，原始记录为分钟起点。
 \end{itemize}
 
-\key{3. 三期资金费率复现对比（表 \ref{tab:check_funding}）}
-\begin{table}[htb]\centering\normalsize
-\renewcommand{\arraystretch}{2.15}
+\key{3. 三期资金费（表 \ref{tab:check_funding}）}
+\begin{table}[H]\centering\normalsize
+\renewcommand{\arraystretch}{1.32}
 \caption{指定结算期资金费率复现对比}\label{tab:check_funding}
 \input{generated/tab_check_funding.tex}
 \end{table}
 
-\key{4. 全周期资金费复现指标}
-全样本 1636 期结算中，PAXG 复现绝对误差全部处于 0.1\bp 以内；XAU 仅有 4 期超过 0.1\bp，最大误差 \repXAUmax\bp（具体见正文表 \ref{tab:repro}）。
+\key{4. 复现误差（表 \ref{tab:check_repro}）}
+\begin{table}[H]\centering\normalsize
+\renewcommand{\arraystretch}{1.32}
+\caption{全周期资金费复现误差}\label{tab:check_repro}
+\input{generated/tab_check_repro.tex}
+\end{table}
 
-\key{5. 预测模型评估指标（表 \ref{tab:check_model}）}
-\begin{table}[htb]\centering\normalsize
-\renewcommand{\arraystretch}{2.15}
-\caption{样本外测试期（2026-07 至 2026-09）核心预测指标汇总}\label{tab:check_model}
+\key{5. 预测模型}
+\noindent\textbf{模型参数与基线}（表 \ref{tab:check_model}）：
+\begin{table}[H]\centering\normalsize
+\renewcommand{\arraystretch}{1.32}
+\caption{训练/测试样本数与基线回归参数}\label{tab:check_model}
 \input{generated/tab_check_model.tex}
+\end{table}
+\noindent\textbf{测试期 RMSE（bp）}（表 \ref{tab:rmse_app}，按预测起点 $t$ 所在月份归属）：
+\begin{table}[H]\centering\normalsize
+\renewcommand{\arraystretch}{1.32}
+\caption{测试期零/基线/我的模型三个预测的 RMSE}\label{tab:rmse_app}
+\input{generated/tab_rmse.tex}
 \end{table}
 }
 
