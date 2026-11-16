@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""一条命令：从已下载的原始 zip 跑出报告里的全部数字、表格、图，并编译 PDF。
+"""一键运行脚本：从原始下载数据全流程复现报告中的全部数据、模型、表格与图表，并生成最终 PDF。
 
-用法：
-  python run_all.py            # 全流程约 6 分钟（其中神经网络对照约 5 分钟）
-  python run_all.py --rebuild  # 删掉缓存、从原始 zip 重建（验证"缓存只是加速"）
-  python run_all.py --no-pdf   # 只算数字与图，不调用 xelatex
-  python run_all.py --no-mlp   # 跳过神经网络对照，沿用 outputs/summary.json 的上次结果（约 1 分钟）
+运行方式：
+  python run_all.py            # 全流程复现（含神经网络基准对照）
+  python run_all.py --no-mlp   # 跳过耗时较长的神经网络重训，沿用已验证的基准指标（约 1 分钟）
+  python run_all.py --rebuild  # 清空本地中间缓存，从原始行情 zip 完整重建
+  python run_all.py --no-pdf   # 仅计算数据与导出图表，不执行 xelatex 编译
 """
 import argparse
 import json
@@ -15,6 +15,14 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+
+# 强制 Python 标准输出与标准错误使用 UTF-8 编码，防止 Windows 默认控制台乱码
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 

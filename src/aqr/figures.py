@@ -175,17 +175,17 @@ def fig_dynamics(dyn: dict):
 
     ax = axes[2]
     ev, pl = dyn["XAUUSDT"]["event"], dyn["XAUUSDT"]["event_placebo"]
-    for g, col, lab in (("F>利息项", BLUE, "多头付费 F>I"), ("F<利息项", ORANGE, "空头付费 F<I")):
-        ax.plot(ev.index, ev[g], color=col, lw=1.3, label=lab)
-        ax.plot(pl.index, pl[g], color=col, lw=0.9, ls="--", alpha=0.8)
-    ax.plot([], [], color=INK2, ls="--", lw=0.9, label="对照：结算前 2h")
+    ax.plot(ev.index, ev["F>利息项"], color=BLUE, lw=1.3, label="结算：多头付费 (F>I)")
+    ax.plot(pl.index, pl["F>利息项"], color=BLUE, lw=0.9, ls="--", alpha=0.85, label="对照：多头付费 (t−2h)")
+    ax.plot(ev.index, ev["F<利息项"], color=ORANGE, lw=1.3, label="结算：空头付费 (F<I)")
+    ax.plot(pl.index, pl["F<利息项"], color=ORANGE, lw=0.9, ls="--", alpha=0.85, label="对照：空头付费 (t−2h)")
     ax.axvline(0, color=INK2, lw=0.7)
     ax.axhline(0, color=GRID, lw=0.8)
     ax.set_xlabel("相对结算时刻（分钟）")
     ax.set_ylabel("溢价指数变化（bp）")
     ax.set_xlim(-60, 60)
     ax.set_ylim(-3.6, 7.2)
-    ax.legend(loc="upper right", fontsize=6.6, handlelength=1.6, borderaxespad=0.1)
+    ax.legend(loc="upper right", fontsize=5.8, ncol=2, handlelength=1.4, borderaxespad=0.1)
     _tag(ax, "(c) XAU 结算前后溢价指数的平均路径")
     fig.tight_layout(w_pad=1.0)
     _save(fig, "fig3_dynamics")

@@ -16,6 +16,13 @@ HOUR = pd.Timedelta(hours=1)
 
 
 def episodes(min_gap=pd.Timedelta(minutes=30)) -> pd.DataFrame:
+    """从 HistData 真实外汇高频行情中识别外汇休市事件窗口。
+    
+    参数：
+        min_gap: 判定为休市的最小停盘时长阈值（默认 30 分钟）
+    返回：
+        DataFrame，包含每次休市的 close（停盘时刻）、reopen（开盘时刻）、时长、休市类别（周末/假日/日休）及是否处于 05-08 新规之后。
+    """
     hd = panel.histdata_utc()
     t = hd.index.to_series()
     gap = t.diff()
@@ -28,11 +35,20 @@ def episodes(min_gap=pd.Timedelta(minutes=30)) -> pd.DataFrame:
 
 
 def _lr(s: pd.Series, a, b):
+    """计算时间点 a 到 b 之间的对数收益率（以 bp 为单位）"""
     va, vb = s.reindex(pd.DatetimeIndex(a)).to_numpy(), s.reindex(pd.DatetimeIndex(b)).to_numpy()
     return 1e4 * (np.log(vb) - np.log(va))
 
 
 def episode_table() -> pd.DataFrame:
+    """提取每次休市期间多市场联动微观表现的核心宽表。
+    
+    计算指标：
+        - gold_gap: 外汇现货在重新开盘时的真实金价跳空缺口（bp）
+        - xau_perp_move: 永续合约在现货休市期间的累计收益率（bp）
+        - index_frozen_share: 参考指数在该次休市中被冻结保持不变的分钟比例
+        - funding_sum_bp: 休市期间结算收取的资金费绝对累计值
+    """
     px, pp = panel.minute_panel("XAUUSDT"), panel.minute_panel("PAXGUSDT")
     ep = episodes()
     c, o = ep["close"], ep["reopen"]
@@ -61,6 +77,10 @@ def episode_table() -> pd.DataFrame:
 
 
 def predictive(ep: pd.DataFrame, x: str, y: str = "gold_gap", B=2000, seed=C.SEED) -> dict:
+    """休市期连续永续收益率对开盘现货跳空缺口的单变量 OLS 回归与 Bootstrap 稳健推断。
+    
+    输出包含：回归斜率、截距、R² 决定系数、斜率 95% 置信区间、方向预测命中率、原始跳空标准差与回归残差标准差。
+    """
     d = ep[[x, y]].dropna()
     if len(d) < 5:
         return {"n": len(d)}

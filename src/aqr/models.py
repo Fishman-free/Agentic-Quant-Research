@@ -40,6 +40,15 @@ def inner_split(d: pd.DataFrame):
 
 
 def cv_rmse(d: pd.DataFrame, feats, alpha) -> float:
+    """计算指定特征子集与正则化参数 alpha 下的滚动时序交叉验证 RMSE。
+    
+    参数：
+        d: 包含训练与验证样本的面板数据
+        feats: 候选特征名称列表
+        alpha: Ridge 模型的 L2 正则化系数
+    返回：
+        合并四折验证集后的全期样本外预测 RMSE（bp）
+    """
     errs = []
     for fit, val in folds(d):
         errs.append(val["y"].to_numpy() - ridge(alpha).fit(fit[feats], fit["y"]).predict(val[feats]))
@@ -47,17 +56,24 @@ def cv_rmse(d: pd.DataFrame, feats, alpha) -> float:
 
 
 def cv_baseline(d: pd.DataFrame) -> float:
+    """计算简单均值回归基线在四折滚动验证集上的 RMSE。"""
     return rmse(np.concatenate([val["y"] - baseline_predict(val, baseline_fit(fit)) for fit, val in folds(d)]))
 
 
 def best_alpha(d, feats):
+    """在预设网格中搜索时序交叉验证 RMSE 最小的 Ridge L2 正则化系数 alpha。"""
     sc = {a: cv_rmse(d, feats, a) for a in ALPHAS}
     a = min(sc, key=sc.get)
     return a, sc[a], sc
 
 
 def select_groups(d: pd.DataFrame):
-    """按组向后剔除：每轮试着去掉一组，CV 变好就去掉，直到去掉哪组都不再变好。"""
+    """基于验证集 RMSE 的向后特征组贪心剔除算法。
+    
+    原则：
+        - "偏离"组包含基准变量，作为基础核心特征强制保留；
+        - 每轮遍历剔除剩余的一组特征，若验证集 RMSE 改善则执行剔除，直到剔除任何组均无法提升泛化性能为止。
+    """
     groups = list(FE.GROUPS)
     feats = lambda gs: [f for g in gs for f in FE.GROUPS[g]]
     a, cur, _ = best_alpha(d, feats(groups))
@@ -81,21 +97,27 @@ def select_groups(d: pd.DataFrame):
 
 
 def baseline_fit(train: pd.DataFrame):
+    """拟合均值回归基准模型：y_t = alpha + beta * d_t (OLS 最小二乘法)"""
     X = np.c_[np.ones(len(train)), train["dev_24h"]]
     coef, *_ = np.linalg.lstsq(X, train["y"].to_numpy(), rcond=None)
     return float(coef[0]), float(coef[1])
 
 
 def baseline_predict(d, ab):
+    """基于基准模型参数输出 4 小时基差变动预测值"""
     return ab[0] + ab[1] * d["dev_24h"].to_numpy()
 
 
 def ridge(alpha):
+    """构造包含标准化（StandardScaler）与 L2 正则化（Ridge）的预测管道"""
     return make_pipeline(StandardScaler(), Ridge(alpha=alpha))
 
 
 def ablation(d: pd.DataFrame, alpha: float) -> pd.DataFrame:
-    """CV 上逐组剔除（相对全特征）与"基线变量+本组"的增益——报告里据此说明每组为什么放进去。"""
+    """特征重要性消融分析：
+    计算各特征组被单项剔除后导致的验证集 RMSE 恶化幅度，以及仅保留该特征组时的独立预测改善，
+    用于科学评估每个维度的经济学信息贡献。
+    """
     full = cv_rmse(d, FE.ALL, alpha)
     base = cv_baseline(d)
     rows = []

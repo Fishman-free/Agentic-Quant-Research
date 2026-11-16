@@ -51,6 +51,10 @@ def _hourly_with(sym, hs=range(1, 25)):
 
 
 def local_projection(d, hs=range(1, 25), sub=None):
+    """Jordà (2005) 局部投影法：测算基差偏离在未来 h 小时（h=1..24）的动态脉冲响应衰减路径。
+    
+    采用 Newey-West HAC 异方差与自相关稳健标准误（maxlags=max(h, 24)）。
+    """
     rows = []
     for h in hs:
         x = d[d["sample"]] if sub is None else d[d["sample"] & sub]
@@ -61,6 +65,7 @@ def local_projection(d, hs=range(1, 25), sub=None):
 
 
 def iv_beta(d, mask):
+    """工具变量（IV）估计：利用滞后 15 分钟的偏离 dev24_lag15 作为工具变量，排除因变量与自变量共享当前价格导致的买卖微观价差弹跳伪回归噪声。"""
     x = d[d["sample"] & mask][["y", "dev_24h", "dev24_lag15"]].dropna()
     # 2SLS（恰好识别）：β_IV = cov(z, y) / cov(z, x)
     z, xv, y = (x[c] - x[c].mean() for c in ("dev24_lag15", "dev_24h", "y"))
@@ -68,6 +73,9 @@ def iv_beta(d, mask):
 
 
 def leg_shares(d, mask, dev="dev_24h"):
+    """微观调整份额分解：
+    通过引入第三方对冲资产剥离宏观系统性黄金 Beta，精准测算 4 小时基差修复中永续合约与现货价格各自承担的调整比例。
+    """
     x = d[d["sample"] & mask].dropna(subset=["r_perp_4h_fwd", "r_spot_4h_fwd", dev])
     rp = ols_hac(x["r_perp_4h_fwd"], x[[dev]])
     rs = ols_hac(x["r_spot_4h_fwd"], x[[dev]])

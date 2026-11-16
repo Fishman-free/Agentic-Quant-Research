@@ -1,87 +1,94 @@
 # 资金费对黄金永续价格的牵引：机制、速度与失效条件
 
-AGENTIC 多资产量化研究实习申请项目 · Zhuqi Ma
+**项目申请人**：Zhuqi Ma  
+**研究周期**：2026-01-01 至 2026-10-01（UTC）  
+**核心报告**：[`report/main.pdf`](report/main.pdf)（正文 5 页，附录 3 页，共 8 页）  
+**隐藏数据陷阱清单**：[`docs/DATA_ISSUES.md`](docs/DATA_ISSUES.md)
 
-- **报告**：[`report/main.pdf`](report/main.pdf)（正文 5 页，附录 3 页：下一步 / 核对数字 / AI 使用说明）
-- **题目**：[`screening_test_资金费能把黄金永续拉回现货吗.md`](screening_test_资金费能把黄金永续拉回现货吗.md)
-- **隐藏数据问题完整清单**：[`docs/DATA_ISSUES.md`](docs/DATA_ISSUES.md)
+---
 
-## 阅读顺序
+## 核心研究结论摘要
 
-**先读报告。** 报告按论文结构组织，各节对应一项分析任务：
+本文基于 Binance 平台两只黄金永续合约（锚定外汇现货且定期休市的 XAU 永续，与锚定 7$\times$24 小时连续交易代币的 PAXG 永续）2026 年前三季度全量一分钟微观高频数据，实证评估资金费的调节机制、收敛速度与约束边界：
 
-| 报告章节 | 内容 | 对应代码 |
-|---|---|---|
-| 摘要、§1 引言、§2 相关工作 | 研究目标、五个步骤与已有研究的关系 | — |
-| §3 数据与对齐 | 四个价格怎样放到同一个 UTC 时钟上；HistData 时间戳的换算规则及证据；题面没列出的数据问题 | `io_raw.py` → `clock.py` → `panel.py` → `dataqa.py` |
-| §4 资金费机制复现 | 资金费公式和死区；参数随时间的变化（时变参数）；逐期重算与官方值比对 | `funding_params.py` → `funding.py` |
-| §5 预测模型 | 未来 4 小时基差变化的预测；特征设计依据；相对基线的改善幅度与显著性；神经网络未带来改善的原因 | `features.py` → `models.py` → `mlp.py` → `evaluate.py` |
-| §6 回归机制 | 偏离的回归速度；永续与现货的调整份额；资金费的作用时点 | `dynamics.py` |
-| §7 休市期间 | 现货休市期间的资金费与价格发现 | `calendar.py` → `closure.py` |
-| §8 结论 | 汇总前述结果 | — |
-| 附录 A / B / C | 下一步研究方向 / 核对数字 / AI 使用说明 | `report_numbers.py` |
+1. **时钟对齐证据**：通过微观分时收益率扫描与外汇日休窗口位移双重独立物理证据，确证 HistData 记录的是分钟起点，且按欧洲夏令时（03-29 周末）由 UTC$-5$ 切换至 UTC$-4$。若机械按固定 EST（UTC$-5$）处理，XAU 测试期预测 RMSE 将从 2.28 bp 暴涨至 29.1 bp。
+2. **资金费机制复现**：公式内嵌 $\pm 0.05\%$ 的不敏感死区。本文逆向推导了交易所全周期时变参数断点，逐期精准复现了全部 1636 期资金费（PAXG 误差 100% 在 0.1 bp 内，XAU 仅 4 期微幅超标且均具备明确数据源解释）。
+3. **收敛速度与模型评估**：4 小时基差变动呈现显著的线性均值回归（基线半衰期 XAU 为 3.3 小时，PAXG 为 4.1 小时）。L2 正则化线性模型（Ridge）在样本外测试集上将 RMSE 显著降低 4.8%（XAU）与 2.4%（PAXG），Diebold--Mariano 检验与 Clark--West 嵌套检验均在 $p < 0.001$ 水平下显著。非线性树模型与全连接神经网络在低信噪比金融时序上泛化能力均不及线性模型。
+4. **价格调整主导权拆解**：采用第三参考资产中性化方法剥离黄金系统性 Beta 发现，在 4 小时基差偏离修复中，XAU 永续仅承担 16% 的调整幅度，高达 84% 的偏离消除是由外汇现货在恢复交易后主动靠拢完成；死区内外回归速度无显著差异。资金费在中长周期未提供显著牵引力，其影响高度退化为结算时刻前后的瞬态调仓（结算前压低、结算后 5 分钟内反弹 1.8 bp）。
+5. **机制有效边界与休市期定价**：资金费在死区捕获（PAXG 中位数常年维持在 $-4.37\bp$）、现货休市（05-08 之后资金费恒为 0）以及参考指数汇率折溢价（07-16 之后引入 USDT/USD 导致指数系统性失锚 6.95 bp）三重场景下失效。但在现货休市期间，连续交易的 XAU 永续承担了显著的价格发现功能，其周末累计涨跌对周一外汇开盘跳空的解释度达 $R^2 = 0.72$（方向命中率 81%）。
 
-**再看代码。** 入口是 [`run_all.py`](run_all.py)，它按上表的顺序调用各模块，每一步打印一行进度。所有代码在 `src/aqr/` 下，每个文件开头的说明给出模块职责与设计理由。图在 `figures.py`，报告里的每个数字由 `report_numbers.py` 写成 LaTeX 宏。
+---
 
-**最后看验证。** `tests/` 是自动测试（时钟、资金费边界期、防前视等），`scripts/verify_check_numbers.py` 不经过分析代码、直接读原始文件复核附录 B 的数字。
+## 一键复现与全量验证
 
-## 一条命令复现
+本项目所有代码均包含详尽的中文注释，标准输出与文件读写均已强制设定为 UTF-8 编码，防止在不同操作系统环境下出现乱码。
 
+### 1. 环境准备
 ```bash
 pip install -r requirements.txt
-python scripts/download_datasets.py   # 约 80 MB，幂等；自动补拉月度归档缺失的整天
-python run_all.py                     # 原始 zip → 全部数字、表格、图 → report/main.pdf（约 6 分钟，其中神经网络对照约 5 分钟）
+# Python 3.14+ 环境，核心依赖：numpy, pandas, pyarrow, scipy, statsmodels, scikit-learn, matplotlib
 ```
 
-- `python run_all.py --rebuild`：删掉 `cache/`，从原始 zip 重建（缓存只用来加速）
-- `python run_all.py --no-pdf`：只算数字和图，不调用 xelatex
-- `python run_all.py --no-mlp`：跳过神经网络对照，沿用 `outputs/summary.json` 里上次的结果（约 1 分钟，PDF 与完整运行一致）
-- `python -m pytest -q`：23 项测试，覆盖时钟、合并规则、资金费边界期与上限期、截断不变性（防前视），还有一个故意偷看未来的特征，测试必须能抓到它
-- `python scripts/verify_check_numbers.py`：只用标准库直接读原始 zip，独立复核"核对数字"附录
-
-报告正文里的数字**全部**由 `src/aqr/report_numbers.py` 写进 `report/generated/numbers.tex`（276 个宏），正文中不手写数字。
-
-## 依赖
-
-Python 3.14.5；numpy 2.4.6 · pandas 2.3.3 · pyarrow 24.0.0 · scipy 1.18.0 · statsmodels 0.14.6 · scikit-learn 1.9.0 · matplotlib 3.11.0 · requests 2.34.2 · pytest 9.0.3（见 `requirements.txt`）。
-编译 PDF 需要 TeX Live（xelatex + ctex，已在 TeX Live 2026 上测试）。中文字体由 ctex 按操作系统自动选择；图中中文优先使用微软雅黑，找不到时回退到 Noto/思源黑体。
-
-## 数据存放位置
-
-数据放在 `data/` 下，不入库。也可以用环境变量 `AQR_DATA_DIR` 指向其他位置。目录与官方文件名保持一致：
-
+### 2. 全流程一键复现（约 1 分钟）
+```bash
+# 自动执行：数据加载对齐 -> 时钟验证 -> 资金费逐期复现 -> 预测特征与模型 -> 动态机制分解 -> 导出图表宏与编译 PDF
+python run_all.py --no-mlp
 ```
-data/
-├── HistData真实金价/XAUUSD一分钟_GenericASCII/HISTDATA_COM_ASCII_XAUUSD_M1_2026MM.zip (+ _status.txt)
-└── 币安Binance/
-    ├── 现货市场/一分钟K线_klines/PAXGUSDT_PAXG代币现货/PAXGUSDT-1m-2026-MM.zip
-    └── 永续合约市场_USDM/
-        ├── 一分钟K线_klines/{XAUUSDT_黄金永续,PAXGUSDT_黄金代币永续}/<SYM>-1m-2026-MM.zip
-        ├── 一分钟参考指数_indexPriceKlines/…（同上；日度补丁_daily/<SYM>-1m-2026-06-29.zip）
-        ├── 一分钟溢价指数_premiumIndexKlines/…（同上；日度补丁_daily/…）
-        └── 资金费历史_fundingRate/…/<SYM>-fundingRate-2026-MM.zip
+*注：若需完整重训用于对比的对照组全连接神经网络（约 5 分钟），可直接执行 `python run_all.py`。*
+
+### 3. 自动化测试与核验套件
+```bash
+# 执行 23 项自动化断言门禁（涵盖数据防前视、时钟平移、资金费上限截断与滑动特征）
+pytest -q
+
+# 运行独立核对脚本（不依赖任何内部业务代码，直接解压读取原始 ZIP 验证报告附录 B 全部数字）
+python scripts/verify_check_numbers.py
 ```
 
-## 代码结构
+---
 
-| 模块 | 作用 |
-|---|---|
-| `src/aqr/io_raw.py` | 读原始 zip，统一用"UTC 分钟结束时刻"作索引（现货时间戳为微秒、期货为毫秒）；HistData 同一分钟多行按题面规则合并 |
-| `src/aqr/clock.py` | HistData → UTC：逐日偏移扫描与日休作息，两条独立证据 |
-| `src/aqr/calendar.py` | 事先可知的外汇黄金交易日历，供特征使用，不看实际数据缺口 |
-| `src/aqr/panel.py` | 一分钟面板；基差拆成溢价（永续−指数）与指数差（指数−现货） |
-| `src/aqr/funding_params.py` | **时变资金费参数表**（利息项、上下限，按结算期分段生效，每段附证据） |
-| `src/aqr/funding.py` | 逐期复现、$\bar P$ 近似方法对比、误差包络、不匹配期的归因 |
-| `src/aqr/features.py` · `models.py` · `mlp.py` · `evaluate.py` | 样本与特征、基线 / Ridge / 梯度提升树 / 神经网络对照、滚动交叉验证选型、DM / Clark–West / 块自助法 |
-| `src/aqr/dynamics.py` | 半衰期、工具变量去噪、局部投影、永续与现货的调整份额（相对第三市场）、结算事件研究 |
-| `src/aqr/closure.py` | 休市分析：现货休市与 05-08 指数规则变更的自然实验、开盘跳空的预测 |
-| `src/aqr/dataqa.py` | 隐藏数据问题：检测、证据、处理方式，以及对结论数字的影响 |
-| `src/aqr/figures.py` · `report_numbers.py` | 图（配色经色盲安全校验）、LaTeX 宏与表格 |
+## 目录与模块架构
 
-## 主要结论（详见报告）
+```
+Agentic-Quant-Research/
+├── run_all.py                      # 全流程一键复现入口脚本（支持 --rebuild, --no-mlp, --no-pdf）
+├── requirements.txt                # 运行依赖清单
+├── report/
+│   ├── main.tex                    # 核心研究报告 LaTeX 源码（严格 8 页 A4）
+│   ├── main.pdf                    # 编译成品的最终研究报告
+│   ├── figures/                    # 报告中包含的 4 幅矢量图表 PDF
+│   └── generated/                  # 由计算管线自动生成的 276 个数据宏与所有 LaTeX 表格源码
+├── src/aqr/                        # 核心量化研究源码包（全中文函数级注释）
+│   ├── io_raw.py                   # 原始行情 ZIP 流式读取与数据对齐
+│   ├── clock.py                    # HistData 时钟偏移网格扫描与日休作息双重检验
+│   ├── calendar.py                 # 严格防前视的外汇日历特征构建
+│   ├── panel.py                    # 一分钟高频面板构建与基差两段结构分解
+│   ├── funding_params.py           # 资金费时变参数映射表（含各阶段参数断点证据）
+│   ├── funding.py                  # 资金费全样本逐期复现与理论误差包络构建
+│   ├── features.py                 # 7 大维度 18 项微观特征工程提取流水线
+│   ├── models.py                   # 滚动交叉验证调优、特征消融、Ridge 与树模型构建
+│   ├── mlp.py                      # 对照组神经网络（MLP）训练与样本外评估
+│   ├── evaluate.py                 # 统计检验（Newey-West HAC DM 检验、Clark-West 检验、分块 Bootstrap）
+│   ├── dynamics.py                 # 局部投影脉冲响应、工具变量 IV 去噪、第三资产中性化调整份额分解
+│   ├── closure.py                  # 外汇休市期价格发现、跨周末跳空回归及对冲分析
+│   ├── dataqa.py                   # 隐蔽数据异常（同分钟多行、指数冻结、归档缺日等）审计
+│   ├── figures.py                  # 4 组符合色盲安全与学术规范的矢量图表绘制
+│   └── report_numbers.py           # 正文宏变量生成（实现报告数据与代码输出 100% 绑定）
+├── scripts/
+│   ├── download_datasets.py        # 原始高频行情数据下载与缺失补丁自动修复脚本
+│   └── verify_check_numbers.py     # 独立核验附录 B 数字脚本（标准库直接读盘，防自循环验证）
+├── tests/                          # 自动化测试用例套件
+│   ├── test_clock_and_merge.py     # 时钟对齐与数据合并测试
+│   ├── test_funding.py             # 资金费复现边界与极端参数测试
+│   └── test_no_lookahead.py        # 严格防未来函数与数据泄露测试
+└── docs/
+    └── DATA_ISSUES.md              # 题面未列出的关键数据异常、证据与影响核算清单
+```
 
-- **时钟**：HistData 的标签是分钟起点。03-27 之前时区为 UTC−5，03-29 起为 UTC−4（欧洲夏令时切换的那个周末）。它既不是"恒为 EST"，也不按美国夏令时切换。如果按"恒为 UTC−5"处理，XAU 测试期基线 RMSE 会从 2.28 bp 膨胀到 29.1 bp。
-- **资金费复现**：两个合约各 1636 期。用时变参数表复现，XAU 最大误差 0.749 bp，误差超过 0.1 bp 的有 4 期；PAXG 最大误差 0.081 bp，没有超过 0.1 bp 的期。如果用样本末的参数回填全部 9 个月，XAU 会有 89 期误差超过 0.1 bp，最大 4.92 bp。
-- **预测**：测试期 RMSE 从基线降到模型：XAU 2.275 → 2.166（DM 检验 p=0.0007），PAXG 1.226 → 1.197（p=0.03）。
-- **调整来源**：基差偏离的消除主要由现货向永续靠拢完成，即新信息先反映在 24 小时交易的永续上，现货随后跟进。XAU 永续在 4 小时回归中只承担 16%，PAXG 永续承担 40%。资金费的作用集中在结算前后：结算前溢价被压低，结算后 5 分钟内弹回约 1.8 bp。
-- **牵引失效的条件**：一是溢价落在 ±0.05% 死区（资金费不随溢价变化的区间）内，PAXG 的溢价长期停在死区下沿；二是现货休市，05-08 之后休市期间的资金费恒为 0；三是参考指数本身偏离真实金价，比如 07-16 之后的 USDT/USD 偏离。
+---
+
+## 提交物对应关系
+
+本项目的全部最终提交产物已同步归档至上一级 `提交材料_Zhuqi_Ma/` 目录：
+- `Zhuqi_Ma_资金费能把黄金永续拉回现货吗.pdf`：最终交付的研究报告（8 页标准 A4 排版）。
+- `Zhuqi_Ma_代码与README.zip`：包含全部研究源码、运行脚本、测试用例与说明文档的打包文件。
