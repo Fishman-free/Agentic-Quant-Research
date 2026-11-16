@@ -136,7 +136,7 @@ def fig_funding(rep: dict):
 
 # ------------------------------------------------------------------ 图 3：回归速度、调整份额、资金费的作用时点
 def fig_dynamics(dyn: dict):
-    fig, axes = plt.subplots(1, 3, figsize=(FULL_W, 1.85), gridspec_kw={"width_ratios": [1, 1.05, 1.15]})
+    fig, axes = plt.subplots(1, 3, figsize=(FULL_W, 2.25), gridspec_kw={"width_ratios": [1, 1.05, 1.15]})
     ax = axes[0]
     for sym in C.SYMBOLS:
         lp = dyn[sym]["lp_train"]
@@ -175,17 +175,19 @@ def fig_dynamics(dyn: dict):
 
     ax = axes[2]
     ev, pl = dyn["XAUUSDT"]["event"], dyn["XAUUSDT"]["event_placebo"]
-    ax.plot(ev.index, ev["F>利息项"], color=BLUE, lw=1.3, label="结算：多头付费 (F>I)")
-    ax.plot(pl.index, pl["F>利息项"], color=BLUE, lw=0.9, ls="--", alpha=0.85, label="对照：多头付费 (t−2h)")
-    ax.plot(ev.index, ev["F<利息项"], color=ORANGE, lw=1.3, label="结算：空头付费 (F<I)")
-    ax.plot(pl.index, pl["F<利息项"], color=ORANGE, lw=0.9, ls="--", alpha=0.85, label="对照：空头付费 (t−2h)")
+    ax.plot(ev.index, ev["F>利息项"], color=BLUE, lw=1.3, label="结算·多头付费")
+    ax.plot(pl.index, pl["F>利息项"], color=BLUE, lw=0.9, ls="--", alpha=0.85, label="对照·多头付费")
+    ax.plot(ev.index, ev["F<利息项"], color=ORANGE, lw=1.3, label="结算·空头付费")
+    ax.plot(pl.index, pl["F<利息项"], color=ORANGE, lw=0.9, ls="--", alpha=0.85, label="对照·空头付费")
     ax.axvline(0, color=INK2, lw=0.7)
     ax.axhline(0, color=GRID, lw=0.8)
     ax.set_xlabel("相对结算时刻（分钟）")
     ax.set_ylabel("溢价指数变化（bp）")
     ax.set_xlim(-60, 60)
     ax.set_ylim(-3.6, 7.2)
-    ax.legend(loc="upper right", fontsize=5.8, ncol=2, handlelength=1.4, borderaxespad=0.1)
+    # 图例置于右上角空白区（曲线最高约 3.6 bp，图例落在 y>3.6 的空档，避免与曲线重叠）
+    ax.legend(loc="upper right", bbox_to_anchor=(1.0, 1.0), fontsize=5.8, ncol=2,
+              handlelength=1.3, columnspacing=0.7, labelspacing=0.3, borderaxespad=0.15)
     _tag(ax, "(c) XAU 结算前后溢价指数的平均路径")
     fig.tight_layout(w_pad=1.0)
     _save(fig, "fig3_dynamics")

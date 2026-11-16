@@ -256,21 +256,21 @@ $$\text{开盘跳空} = \clWkPosticpt + \clWkPostslope \times \text{永续周末
 \appendix
 \ctexset{section={name={附录\,},number=\Alph{section}}}
 
-{\linespread{0.96}\selectfont
-\setlength{\parskip}{0.6pt plus 0.2pt minus 0.2pt}
+{\linespread{1.08}\selectfont
+\setlength{\parskip}{2.5pt plus 1pt minus 0.5pt}
 \section{下一步研究：用连续黄金衍生品对冲周末现货开盘跳空}
 
 \key{一、 选定方向与业务量化收益}
 
 \noindent\textbf{1. 业务痛点与对冲策略构建}：传统宏观对冲基金、跨国黄金做市商与进出口金商面临每周五纽约外汇现货收盘（17:00 EST / 21:00 UTC）至周日外汇开盘（17:00 EST / 21:00 UTC）长达 48 小时的休市信息真空。周末地缘摩擦或央行突发事件常引发周一开盘毁灭性跳空。本文提议构建\textbf{“跨周末现货--永续动态 Beta 对冲策略”}：
-\begin{itemize}[leftmargin=1.2em,itemsep=-0.5pt]
+\begin{itemize}[leftmargin=1.2em,itemsep=2pt]
 \item \key{头寸构建}：每周五外汇收盘前 5 分钟，组合持有 $V = 1000$ 万美元现货黄金多头；根据实证最优对冲比率 $\beta^* = 0.91$（95\% 置信区间 $[0.73, 1.51]$），在 Binance 建立名义价值 $V_{\text{perp}} = \beta^* \cdot V = 910$ 万美元的 XAUUSDT 永续合约空头。
 \item \key{周末持有}：05-08 新规后外汇休市期间 XAUUSDT 参考指数随盘口自身生成，资金费率恒等于 0，过周末零损耗。
 \item \key{开盘结清}：周日外汇重新开盘后 5 分钟内以限价或市价 TWAP 平掉永续合约空头，完成对冲闭环。
 \end{itemize}
 
-\noindent\textbf{2. 收益测量口径与计算明细（杜绝推测与捏造）}：
-\begin{itemize}[leftmargin=1.2em,itemsep=-0.5pt]
+\noindent\textbf{2. 收益测量口径与计算明细}：
+\begin{itemize}[leftmargin=1.2em,itemsep=2pt]
 \item \key{样本基础}：全部基于 2026-05-08 规则调整后完整的 \clWkPostn 个周末真实交易数据。
 \item \key{原始跳空与残差测量}：周五收盘价 $S_{\text{close}}$ 到周日开盘价 $S_{\text{open}}$ 的真实金价跳空幅度 $\Delta p_{\text{gold}} = 10^4 \ln(S_{\text{open}}/S_{\text{close}})$，样本标准差 $\sigma_{\text{raw}} = \clWkPostsd\bp$。以周五收盘至周日开盘前 1 分钟 XAU 永续累计收益率 $x_{\text{perp}}$ 进行 OLS 回归：$\widehat{\Delta p_{\text{gold}}} = \clWkPosticpt + \clWkPostslope \cdot x_{\text{perp}}$，对冲后残差标准差降至 $\sigma_{\text{resid}} = \clWkPostresid\bp$。
 \item \key{方差削减比例}：$1 - (\sigma_{\text{resid}}/\sigma_{\text{raw}})^2 = 1 - (25.4/48.0)^2 = \clVarCut$（即回归拟合度 $R^2 = \clWkPostrsq$）。
@@ -278,7 +278,7 @@ $$\text{开盘跳空} = \clWkPosticpt + \clWkPostslope \times \text{永续周末
 \end{itemize}
 
 \noindent\textbf{3. 交易摩擦与综合净收益扣除}：
-\begin{itemize}[leftmargin=1.2em,itemsep=-0.5pt]
+\begin{itemize}[leftmargin=1.2em,itemsep=2pt]
 \item \key{手续费假设}：Binance 机构挂单费率 0.02\%（双边 4\bp），吃单 0.05\%（双边 10\bp）。对应 910 万美元对冲本金，单周手续费为 0.36--0.91 万美元；滑点按 1\bp 测算为 0.09 万美元。开盘基差均值跳动仅 \clReopenPost\bp。
 \item \key{综合净效益}：扣除全部双边摩擦成本（约 0.45--1.0 万美元）后，策略仍产生高达 2.7--3.2 万美元（近 30\bp）的净风险削减收益，净收益成本比达 3.5:1。
 \end{itemize}
@@ -287,7 +287,7 @@ $$\text{开盘跳空} = \clWkPosticpt + \clWkPostslope \times \text{永续周末
 (1) \textbf{极高拟合度}：05-08 后 \clWkPostn 个周末回归达 $R^2 = \clWkPostrsq$，$p < 0.0001$，斜率置信区间 $[0.73, 1.51]$ 稳健覆盖 1；(2) \textbf{方向胜率优异}：对跳空方向命中率达 \clWkPosthit；(3) \textbf{跨市场一致性}：PAXG 实物代币同期产生 $R^2 = \clWkPostPaxgrsq$ 的显著解释力，证明这是加密黄金资本对全球信息的连续定价，而非单一合约异动。
 
 \key{三、 一周敏捷实验方案与放弃准则（Kill Criteria）}
-\begin{itemize}[leftmargin=1.2em,itemsep=-0.5pt]
+\begin{itemize}[leftmargin=1.2em,itemsep=2pt]
 \item \key{Day 1--2 多源数据扩展}：接入 OKX、Bybit 黄金永续高频成交与 L2 订单簿，检验不同交易所流动性深度下的定价一致性。
 \item \key{Day 3--4 撮合仿真回测}：构建考虑限价排队、滑点与冲击成本的执行模块；\key{Day 5} 提取地缘突发与非农周样本进行压力测试。
 \item \key{放弃准则（Kill Criteria）}：(1) 跨交易所样本外跳空方差削减比例低于 35\%；(2) 盘口滑点超过 4\bp；(3) 交易所再度调整休市指数规则。
@@ -295,8 +295,8 @@ $$\text{开盘跳空} = \clWkPosticpt + \clWkPostslope \times \text{永续周末
 
 \key{四、 为什么不选另一个看起来合理的备选方向？}
 
-\begin{table}[htb]\centering\scriptsize
-\setlength{\tabcolsep}{2.2pt}\renewcommand{\arraystretch}{0.95}
+\begin{table}[htb]\centering\footnotesize
+\setlength{\tabcolsep}{3.5pt}\renewcommand{\arraystretch}{1.25}
 \caption{核心研究方向与备选方向的可行性对比}\label{tab:comp}
 \begin{tabularx}{\linewidth}{lXX}
 \toprule
@@ -319,24 +319,28 @@ $$\text{开盘跳空} = \clWkPosticpt + \clWkPostslope \times \text{永续周末
 }
 
 \clearpage
+{\linespread{1.45}\selectfont
+\setlength{\parskip}{6pt plus 1pt minus 1pt}
 \section{核对数字}
 本节汇总题面全部核对要求与全流程关键指标，确保实证结果可复现且数值精确可溯。
 
 \key{1. 两个指定时刻的价格数据（表 \ref{tab:check_prices}）}
-\begin{table}[htb]\centering\small
+\begin{table}[htb]\centering\normalsize
+\renewcommand{\arraystretch}{2.15}
 \caption{指定时间点基础行情与基差核对}\label{tab:check_prices}
 \input{generated/tab_check_prices.tex}
 \end{table}
 
 \key{2. 真实金价时钟映射规则}
 HistData 数据以欧洲夏令时为基准切换：
-\begin{itemize}[leftmargin=1.5em,itemsep=0pt]
+\begin{itemize}[leftmargin=1.5em,itemsep=5pt]
 \item 2026-01-01 至 2026-03-27：时间戳平移 $+300$ 分钟对齐 UTC，原始记录为分钟起点；
 \item 2026-03-30 至 2026-10-01：时间戳平移 $+240$ 分钟对齐 UTC，原始记录为分钟起点。
 \end{itemize}
 
 \key{3. 三期资金费率复现对比（表 \ref{tab:check_funding}）}
-\begin{table}[htb]\centering\small
+\begin{table}[htb]\centering\normalsize
+\renewcommand{\arraystretch}{2.15}
 \caption{指定结算期资金费率复现对比}\label{tab:check_funding}
 \input{generated/tab_check_funding.tex}
 \end{table}
@@ -345,12 +349,16 @@ HistData 数据以欧洲夏令时为基准切换：
 全样本 1636 期结算中，PAXG 复现绝对误差全部处于 0.1\bp 以内；XAU 仅有 4 期超过 0.1\bp，最大误差 \repXAUmax\bp（具体见正文表 \ref{tab:repro}）。
 
 \key{5. 预测模型评估指标（表 \ref{tab:check_model}）}
-\begin{table}[htb]\centering\small
+\begin{table}[htb]\centering\normalsize
+\renewcommand{\arraystretch}{2.15}
 \caption{样本外测试期（2026-07 至 2026-09）核心预测指标汇总}\label{tab:check_model}
 \input{generated/tab_check_model.tex}
 \end{table}
+}
 
 \clearpage
+{\linespread{1.22}\selectfont
+\setlength{\parskip}{3pt plus 0.5pt minus 0.5pt}
 \section{AI 工具使用说明与人机协作反思}
 
 \key{一、 人机协同分工结构}
@@ -399,5 +407,6 @@ HistData 数据以欧洲夏令时为基准切换：
 \key{五、 关于 Agentic Quant 范式的人机边界反思}
 
 高频量化实证要求极高的数据吞吐量与严苛的因果逻辑一致性。AI 工具能够成百倍地放大研究员的数据处理与代码编写产能，但在微观结构制度理解、因果关系识别、伪回归噪声过滤以及极端市场边界判定上，AI 极其容易产生看似逻辑自洽但实则脱离物理真实的“合理化幻觉”。真正的 Agentic Quant 研发范式绝非自动化托管，而是一场由人类专家掌舵、以机器为超级杠杆的深度智力交互。
+}
 
 \end{document}
