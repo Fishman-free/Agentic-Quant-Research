@@ -82,4 +82,6 @@ def daily_break_schedule(hd_local_index: pd.DatetimeIndex) -> pd.DataFrame:
     out = pd.DataFrame({"last_before": t.shift()[m].values, "first_after": t[m].values})
     out["break_start_local"] = out["last_before"] + MINUTE
     out["hours"] = (out["first_after"] - out["break_start_local"]) / pd.Timedelta(hours=1)
+    # 只保留工作日（周一至周五）的日休；排除周末休市窗口内的数据缺口（如欧洲夏令时切换日 03-29 的伪缺口）
+    out = out[out["break_start_local"].dt.dayofweek < 5].reset_index(drop=True)
     return out

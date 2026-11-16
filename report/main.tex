@@ -257,7 +257,7 @@ $$\text{开盘跳空} = \clWkPosticpt + \clWkPostslope \times \text{永续周末
 \appendix
 \ctexset{section={name={附录\,},number=\Alph{section}}}
 
-{\linespread{1.08}\selectfont
+{\linespread{1.13}\selectfont
 \setlength{\parskip}{2.5pt plus 1pt minus 0.5pt}
 \section{下一步研究：用连续黄金衍生品对冲周末现货开盘跳空}
 
@@ -294,29 +294,26 @@ $$\text{开盘跳空} = \clWkPosticpt + \clWkPostslope \times \text{永续周末
 \item \key{放弃准则（Kill Criteria）}：(1) 跨交易所样本外跳空方差削减比例低于 35\%；(2) 盘口滑点超过 4\bp；(3) 交易所再度调整休市指数规则。
 \end{itemize}
 
-\key{四、 为什么不选另一个看起来合理的备选方向？}
+\key{四、 为什么不选另一个方向（基差和资金费的同期关系）}
+
+题目给出的另一个深挖角度是「基差和资金费在同一期里是什么关系」。本文没有选它，理由如下：
 
 \begin{table}[htb]\centering\footnotesize
 \setlength{\tabcolsep}{3.5pt}\renewcommand{\arraystretch}{1.25}
-\caption{核心研究方向与备选方向的可行性对比}\label{tab:comp}
+\caption{选定方向与备选方向的对比}\label{tab:comp}
 \begin{tabularx}{\linewidth}{lXX}
 \toprule
-\textbf{对比维度} & \textbf{选定方向：跨周末开盘跳空对冲} & \textbf{备选方向：跨市场现货--永续基差套利} \\
+\textbf{对比维度} & \textbf{选定：现货休市期的价格发现（方向 B）} & \textbf{备选：基差与资金费的同期关系（方向 A）} \\
 \midrule
-\textbf{策略逻辑} & 利用周末连续交易永续对冲外汇跳空风险 & 溢价冲出死区时买现货卖永续赚取资金费与基差回归 \\
-\textbf{理论预期} & 削减 72\% 跳空方差，节约单周 3.7 万美元 VaR & 年化 10\%--20\% 稳定资金费现金流与无风险套利 \\
-\textbf{致命缺陷} & 无（休市期资金费为 0，持有无损耗） & \textbf{被死区捕获、资金费钝化、交易摩擦彻底吞噬} \\
-\textbf{实证证伪证据} & $R^2=0.72$，斜率置信区间包含 1 & PAXG 溢价中位数 $-4.37\bp$ 常年贴在死区下沿 \\
-\textbf{摩擦侵蚀核算} & 手续费仅占风险收益的 15\%--25\% & \textbf{双边现货与合约手续费达 15\bp，远超 2--4\bp 基差空间} \\
-\textbf{汇率失锚风险} & 无（同标的黄金 Beta 对冲） & 07-16 后引入 USDT/USD 汇率偏差（达 6.95\bp 永久失锚） \\
+\textbf{核心问题} & 资金费归零的休市期，永续能否预告开盘跳空 & 同一结算期内溢价与资金费率如何联动 \\
+\textbf{公式关系} & 休市期资金费恒为 0，需另找价格发现证据 & $F=(\bar{P}+\mathrm{clamp}(I-\bar{P}))/ (8/N)$ 为确定性函数 \\
+\textbf{正文覆盖度} & §7 仅初步回归 $R^2=0.72$，可深挖空间大 & §4 已逐期复现 1636 期验证，§6.3 已回答因果方向 \\
+\textbf{落地价值} & 削减 72\% 跳空方差，单周节约 3.7 万美元 VaR & 偏机制验证，缺乏可量化落地收益 \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\noindent\textbf{否定备选方向的实证剖析}：直觉上，现货--永续期现套利（Cash-and-Carry）是经典量化策略。但本项目实证表明其\textbf{完全不可行}：
-(1) \key{死区捕获导致资金费极度微弱}：PAXG 溢价中位数常年维持在 $-4.37\bp$，陷在死区下沿，实际年化资金费率仅 4.6\%，根本无法覆盖做空实物黄金代币的借贷利息（年化借币成本高达 5\%--8\%）；
-(2) \key{微观摩擦彻底吞噬微小基差}：现货买卖手续费（吃单 10\bp）叠加合约手续费与滑点达 15--20\bp，而黄金基差偏离均值仅 2--4\bp，套利一入场即产生净亏损；
-(3) \key{汇率结构性永久失锚}：07-16 之后参考指数引入 USDT/USD 汇率折价，基差产生 6.95\bp 的系统性阶跃。强行套利将承担不可对冲的单边汇率风险。因此该方向在微观结构层面已被确凿证伪。
+\noindent\textbf{否定理由}：(1) 方向 A 的「同期关系」本质是确定性公式，§4 已逐期复现全部 1636 期并验证（PAXG 误差 100\% 在 0.1\bp 内，XAU 仅 4 期微超且可解释），这一机制已被完整「读懂」，再作为一周深挖的边际信息有限；(2) 方向 A 真正有价值的子问题——资金费是否反作用于基差、能否预测未来基差——正文 §6.3 已通过结算事件研究回答：死区内外回归速度无统计差异，资金费仅引发结算前避费、结算后 5 分钟反弹 \evUpJump\bp 的瞬态，不改变中长期估值中枢；(3) 方向 B 则发现了反直觉的强结果——休市期永续对开盘跳空的解释度达 $R^2=\clWkPostrsq$（方向命中率 \clWkPosthit），并具备直接的对冲落地价值（削减 \clVarCut 跳空方差）。
 }
 
 \clearpage

@@ -79,6 +79,8 @@ def fig_clock(scan: pd.DataFrame, breaks: pd.DataFrame):
     _tag(ax, "(a) 两种偏移下的逐日相关：k 恰为 300→240 分钟")
     ax = axes[1]
     b = breaks[(breaks["hours"] > 0.9) & (breaks["hours"] < 1.2)]
+    # 只画正常日休（停盘开始时刻在 17:30 之前），剔除 18:00/19:00 的数据缺口异常散点
+    b = b[(b["break_start_local"].dt.hour + b["break_start_local"].dt.minute / 60) <= 17.5]
     ax.plot(b["break_start_local"], b["break_start_local"].dt.hour + b["break_start_local"].dt.minute / 60,
             "s", ms=2.6, color=INK2, mec="none")
     ax.axvspan(pd.Timestamp("2026-03-08"), pd.Timestamp("2026-03-28"), color=ORANGE, alpha=0.12, lw=0)
