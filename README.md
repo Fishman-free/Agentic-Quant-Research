@@ -36,6 +36,11 @@ python run_all.py --no-mlp
 ```
 *注：若需完整重训用于对比的对照组全连接神经网络（约 5 分钟），可直接执行 `python run_all.py`。*
 
+运行后生成的全部产物（均位于项目根目录内，相对路径）：
+- `report/figures/`：报告中的 4 幅矢量图表（`fig1_clock.pdf`、`fig2_funding.pdf`、`fig3_dynamics.pdf`、`fig4_closure.pdf`）；
+- `report/generated/`：由计算管线自动生成的 276 个数据宏与全部 LaTeX 表格源码；
+- `report/main.pdf`：编译成品的最终研究报告（8 页 A4）。
+
 ### 3. 自动化测试与核验套件
 ```bash
 # 执行 23 项自动化断言门禁（涵盖数据防前视、时钟平移、资金费上限截断与滑动特征）
