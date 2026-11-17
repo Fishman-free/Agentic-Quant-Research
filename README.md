@@ -29,7 +29,13 @@ pip install -r requirements.txt
 # Python 3.14+ 环境，核心依赖：numpy, pandas, pyarrow, scipy, statsmodels, scikit-learn, matplotlib
 ```
 
-### 2. 全流程一键复现（约 1 分钟）
+### 2. 下载原始数据（提交包内不含数据文件，需自行下载）
+```bash
+python scripts/download_datasets.py   # 约 80 MB，幂等（已存在的文件自动跳过，缺失整日自动补拉）
+```
+数据下载后落在 `data/` 目录（可用环境变量 `AQR_DATA_DIR` 指向其他位置），目录结构与官方文件名一致，详见 `data/数据说明.md`。
+
+### 3. 全流程一键复现（约 1 分钟）
 ```bash
 # 自动执行：数据加载对齐 -> 时钟验证 -> 资金费逐期复现 -> 预测特征与模型 -> 动态机制分解 -> 导出图表宏与编译 PDF
 python run_all.py --no-mlp
@@ -41,7 +47,7 @@ python run_all.py --no-mlp
 - `report/generated/`：由计算管线自动生成的 276 个数据宏与全部 LaTeX 表格源码；
 - `report/main.pdf`：编译成品的最终研究报告（8 页 A4）。
 
-### 3. 自动化测试与核验套件
+### 4. 自动化测试与核验套件
 ```bash
 # 执行 23 项自动化断言门禁（涵盖数据防前视、时钟平移、资金费上限截断与滑动特征）
 pytest -q
